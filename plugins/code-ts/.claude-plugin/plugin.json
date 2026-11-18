@@ -1,8 +1,0 @@
-{
-  "name": "code-ts",
-  "version": "0.14.3",
-  "description": "TypeScript standards, architecture, tests, ops commands, and lint configs for Claude Code and Codex.",
-  "author": {
-    "name": "manro"
-  }
-}
