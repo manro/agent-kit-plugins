@@ -128,7 +128,7 @@ throws. Short-lived working objects stay private to the class that needs them (`
 1. From the repository root, run:
 
    ```bash
-   node <this skill's folder>/scripts/dist/lint-config-apply.run.js --plain --check
+   node <this skill's folder>/scripts/dist/lint-config-apply.run.mjs --plain --check
    ```
 
 2. Act on each line it prints:

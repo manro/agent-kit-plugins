@@ -366,7 +366,7 @@ The entry, domain, and adapter layers of `code-standards` § Module organisation
   package-relative names (`RB.config.pathsService.getPath("prompts")`, `.repoRootPath`,
   `.getRepoPath(".cache")`). Code reads it inside functions. ESLint fails a `..` segment in a string
   passed to `path.*` and any `import.meta.dirname`; a skill script, which cannot import `src/`,
-  roots on `findPackageJSON(import.meta.url)`.
+  roots on the nearest folder above `import.meta.url` that holds its `SKILL.md`.
 - **Parse outside data tolerantly.** Data the package observes rather than owns — a server's
   response, a record another tool keeps, a file a released version wrote — is parsed in its adapter
   by a schema tagged `@external` and mapped there to a domain type. One list item in an unexpected

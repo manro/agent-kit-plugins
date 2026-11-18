@@ -39,7 +39,7 @@ After writing or changing TypeScript, and before finishing, run the bundled chec
 repository root. It loads the repository's own `typescript`, so nothing is installed:
 
 ```bash
-node <this skill's folder>/scripts/dist/ts-naming-check.run.js --plain --include <path> \
+node <this skill's folder>/scripts/dist/ts-naming-check.run.mjs --plain --include <path> \
   [--include <path> …] \
   [--event-lib <dir>] [--event-base <Name>] [--wiring-dir <dir>] [--project tsconfig.json] \
   [--baseline <file> [--write-baseline]] [--json]
