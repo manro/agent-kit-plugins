@@ -1,0 +1,2 @@
+import { createRequire as bundleCreateRequire } from "node:module"; const require = bundleCreateRequire(import.meta.url);
+import{a as m,b as o}from"./chunks/chunk-KI32Y5U6.js";import"./chunks/chunk-7WCGI3U7.js";import"./chunks/chunk-AWSDKGY5.js";var r=new o.cli.commands.ApplyCommand({rootPath:process.cwd()});process.exitCode=await m.runCli({name:"lint-config-apply",summary:r.summary,commandsList:[r],argvSource:process});

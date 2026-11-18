@@ -1,0 +1,19 @@
+{
+  "name": "agent-kit",
+  "owner": {
+    "name": "manro"
+  },
+  "plugins": [
+    {
+      "name": "dev-workflow",
+      "source": "./plugins/dev-workflow",
+      "description": "Reusable development workflows for Claude Code and Codex."
+    },
+    {
+      "name": "code-ts",
+      "source": "./plugins/code-ts",
+      "description": "TypeScript standards, architecture, tests, ops commands, and lint configs for Claude Code and Codex."
+    }
+  ],
+  "description": "Personal skills and workflows for Claude Code, Codex, and Cursor."
+}
