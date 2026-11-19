@@ -92,9 +92,11 @@ const findRule = (ruleName: string): Rule.RuleModule => {
   const rule = ruleName.startsWith(TS_RULE_PREFIX)
     ? (tseslint.plugin as ESLint.Plugin).rules?.[ruleName.slice(TS_RULE_PREFIX.length)]
     : builtinRules.get(ruleName);
+
   if (rule === undefined) {
     throw new Error(`No rule ${ruleName} to copy.`);
   }
+
   return rule as unknown as Rule.RuleModule;
 };
 

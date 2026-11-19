@@ -164,7 +164,9 @@ throws. Short-lived working objects stay private to the class that needs them (`
   `lint-shared.tpl.ts` for a value both tools use), released through agent-kit.
 - In agent-kit, run this skill's `lint-history-record.run.ts` entry from its sources after a
   template change and commit the history file with it; `validate.sh` fails until the new rendering
-  is recorded.
+  is recorded. A source checkout's plugin manifest names no version, so a run from the sources
+  passes `--plugin-version` with the version in agent-kit's `package.json`; an installed plugin's
+  manifest carries it.
 - Follow the repository's module format: `.js` files when `package.json` has `"type": "module"`,
   `.mjs` otherwise; the legacy ESLint config is CommonJS (`.eslintrc.cjs`).
 - Requires Node 22.18 or later, which strips the templates' types for a JavaScript region.

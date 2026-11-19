@@ -1,0 +1,43 @@
+---
+name: session-lessons
+description: >-
+  At the end of a working session, finds the generic decisions it made (the user's corrections,
+  agreed designs, settled conventions, pitfalls that cost a retry) and proposes each as a short rule
+  in the place where the repository keeps that kind of rule, so the next session starts from them.
+  Use when the user asks what to keep from a session, whether the standards missed anything from it,
+  or to absorb its lessons into the repository's agent docs or skills.
+---
+
+# Session Lessons
+
+A session's corrections are the repository's unwritten rules. This skill writes them down once, in
+the right place, so no one has to correct the same thing again.
+
+## Repository facts
+
+- **Where it keeps rules**: its `AGENTS.md`, the docs it links, its skills, a lessons or pitfalls
+  file, each read as written. When none fits a rule's scope, ask the user where it goes.
+
+## Workflow
+
+1. **Collect** from the session: each correction the user made (a rename, a moved layer, "always…",
+   "never…"), each design they agreed to, each convention settled, and each pitfall that cost a
+   retry. The conversation is the source; the diff confirms what landed.
+2. **Keep what is generic**: a rule that a later change elsewhere in the repository would follow.
+   Drop one-off facts, what the code or the Git history already records, and what the repository
+   already states; search its rules for the topic before proposing one.
+3. **Place each** in the most specific existing home that covers its scope: a skill or reference for
+   its area, a section of `AGENTS.md`, a pitfalls file. A rule for one app or platform stays in that
+   app's or platform's place, and a generic rule carries none of its names. A new section or file
+   only when nothing fits.
+4. **Write each as one short rule**: the rule, its reason in a clause, and an example from the code
+   when one makes it concrete. No story of the session, and no date unless the rule depends on a
+   version.
+5. **Show the list** (each rule, its home, whether it is new or changes one) and write after the
+   user agrees, then show the diff.
+
+## Rules
+
+- A rule that contradicts an existing one is put to the user as a choice, never written over it.
+- Never commit; the user decides.
+- Keep out of each rule what the repository's own rules keep out of its files.

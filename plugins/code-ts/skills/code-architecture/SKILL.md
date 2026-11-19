@@ -6,11 +6,12 @@ description: >-
   base, core, and implementation layers inside and between packages, `*.run.ts` entries, the scoped
   package anatomy (names, `#<folder>` alias, barrels and type roots, environment tsconfigs, README),
   an app's command layer and CLI contract, composition roots and lifecycle, the host as an outside
-  system, contracts between processes, boundary validation of owned input and outside data, secrets,
-  state that outlives a run, determinism and byte-level regression gates, and the checklist for
-  adding a package. Use when creating, moving, splitting, or reviewing code under `src/apps/` or
-  `src/libs/`, adding a package or a dependency, or deciding whether code belongs in a skill script,
-  an app, or a lib.
+  system, contracts between processes, state with one owner and read-only copies, boundary
+  validation of owned input and outside data, secrets, state that outlives a run, determinism and
+  byte-level regression gates, lint rules that explain themselves, and the checklist for adding a
+  package. Use when creating, moving, splitting, or reviewing code under `src/apps/` or `src/libs/`,
+  adding a package or a dependency, or deciding whether code belongs in a skill script, an app, or a
+  lib.
 ---
 
 # Code Architecture
@@ -286,7 +287,10 @@ A package exposes two names and nothing else:
   `namespace ZipArchiveRW { type INSTANCE = ZipArchiveRW; }`. An app's namespaces follow the same
   folder path in PascalCase (`Rb.Core.Input.Deck`, `Rb.Cli.Interactive`, `Rb.Core.Composer`).
   Consumers write `import { ZIP, type Zip } from "<package>"`, and the inline `type` erases the
-  root.
+  root. A module that only declares types, with no other import or export, is a script, where
+  `declare module` declares a new module instead of adding to the root: it ends with `export {};`. A
+  namespace member exists only in a program that contains its declaring file, so each tsconfig
+  includes the folders that declare what it reads.
 - **Imports** — another package only through its barrel, never a deep path. A package reaches its
   own modules through its `#<folder>/*` alias (`#zip/zip-archive-rw.adapter.ts`, `#zip/index.ts`),
   never by its own package name, and never by `./` or `../`. Import the `.ts` file, not NodeNext's
@@ -316,7 +320,16 @@ The entry, domain, and adapter layers of `code-standards` § Module organisation
   logger, so tests pass the log lib's silent logger or a memory sink.
 - **Composition root** — one class per pipeline constructs the concrete adapters and strategies and
   passes them down: `DeckBuilder` builds the `ImageCatalog` with its loaders and the
-  `RendererChain`. Below it, collaborators arrive through constructors typed as interfaces.
+  `RendererChain`. Below it, collaborators arrive through constructors typed as interfaces. A
+  process that stays up builds every part once in one root module:
+  - Each part is a constant named after its class in UPPER_SNAKE (`UPLOAD_QUEUE_SERVICE`), parts of
+    one kind are one object keyed by name, and every constructor gets its deps object in the
+    repository's dependency order (`code-standards` § Encapsulation).
+  - A part builds its own wiring. The root writes a closure or an adapter inline only when it needs
+    several of the root's own values: `new ApiClient({ config, versionHeader })`, not a fetch
+    wrapper written at the root.
+  - The root passes inputs, never a state it assembled for a part: a store derives its starting
+    state from the config and files it is given.
 - **Use case** — when two entries run one workflow (a command and the interactive menu), the
   workflow is one class in `core/composer/` (`RB.core.composer.IngestUseCase`): the entries gather
   input, call it, and show the result, and neither wires the pipeline itself.
@@ -409,6 +422,43 @@ through one contract module.
   raises that minimum in the same deploy.
 - The inferred types have type-level assertions (`code-unit-tests-architecture` § Type-level tests).
 
+## State with one owner
+
+When several views or processes show the same state — a server and its clients, a background process
+and its views, a worker and its pages — one side owns it and the others hold copies. The state
+library is the repository's own (a reducer store, signals, observables); these rules hold for any of
+them.
+
+- **One owner changes the state, and data flows one way.** Only the owner applies a change. A view
+  reads its copy and never writes it; it asks the owner through one typed object of named requests
+  (`client.actions.sendSettingsEdit(edit)`), each a call that does not wait and whose failure the
+  owner logs. A view awaits a call only for an answer it shows.
+- **A control shows what the owner holds.** No view keeps its own optimistic copy of an owned value,
+  so a change appears once the owner has made it, whichever view, menu, or command asked. Text the
+  person is still typing is a draft local to the view until it is applied.
+- **A copy is a snapshot plus numbered changes.** The owner sends each changed part with a version
+  that only rises. A view subscribes before it reads the snapshot, so a change sent meanwhile is not
+  lost, replaces a part only with a newer one, and renders once its copy holds the snapshot. A part
+  only the owner needs is never sent.
+- **Real-time data skips the state.** What changes many times a second (progress, a live position)
+  would cost a reducer, an equality check, the reactions, and a copy to every view on each change:
+  the part that produces it pushes it directly, and the one view that shows it listens and writes it
+  to the screen itself.
+- **An unchanged value keeps its identity.** A part that takes a whole new value keeps the old one
+  when the two are equal, so reactions and copies see nothing to act on.
+- **Reactions read through selectors.** Code that reacts to a change reads state only through the
+  selectors views use, so a part's shape is read in one place. It does no I/O while it registers
+  (that waits for `start()`, [§ Inside an app](#inside-an-app)), and when requests overlap, the
+  latest wins and the older ones are cancelled.
+- **A request splits into what needs nothing and what needs the outside world.** The state change
+  applies what needs nothing more; a reaction runs what needs I/O (a dialog, the OS, the network)
+  and records its result as a new change. Both list every request kind (`code-standards` § Module
+  organisation).
+- **The state starts from what is known.** Each part starts from what the owner reads at launch
+  (config, saved files, the OS), never a placeholder default shown as real. What the outside world
+  changes without telling the owner (an OS setting, who is signed in) is read again on an event that
+  can follow it, such as a view gaining focus.
+
 ## State that outlives a run
 
 - **Saved state goes through one store.** A JSON file of state is read and written by one store
@@ -426,6 +476,11 @@ through one contract module.
   join it: `this.#refreshing ??= this.#refresh().finally(() => { this.#refreshing = null; })`. A
   credential the provider rotates on use is saved before it is used, since the old one is already
   gone.
+- **A file has one writer.** Only one part writes a saved file; the others read it at launch or ask
+  that part. A part that reports a change it made itself settles its own state and file first and
+  reports last, so the reaction to its report finds nothing left to change. A step that saves a
+  choice before work that can fail (sign out, then restart) finishes in `finally`, so what is saved
+  and what runs cannot drift apart.
 
 ## Regression gates
 
@@ -447,6 +502,11 @@ through one contract module.
   gets its rule in the same change. `@ts-expect-error` hides every error on its line, a missing
   import included, so prove such a line by making the misuse valid and seeing "Unused
   '@ts-expect-error' directive".
+- **A lint rule explains itself.** A boundary between layers or processes is a lint rule, not a
+  review note. Every restriction's message says what to do instead ("Import through the package's
+  `#<folder>/*` alias, never a relative path"), and a comment above the rule says why it exists. An
+  override replaces a rule's options rather than merging them, so a pattern every folder needs is
+  repeated in each override, with a comment saying so.
 - Run the repository's typecheck, lint, and package anatomy checks.
 
 ## README contract
@@ -458,6 +518,9 @@ through one contract module.
   command table and exit codes; sections for the input contract and engine behaviour; `## Structure`
   with the barrel, the folder table, and the libs it shares; `## Engine notes` for the gotchas;
   `## Tests`, with what the suites cover and the real runs that check the adapters.
+- An app that runs as several processes, or whose state moves between parts, shows both in
+  `## Structure` as Mermaid diagrams: one of its parts and what each depends on, one of how data
+  flows from a request to the screen.
 
 ## Adding a package
 
@@ -496,8 +559,12 @@ through one contract module.
   layer that understands them.
 - Messages between processes come from one contract: each schema once, types inferred, the receiver
   checking sender and payload, every request answering within a timeout.
-- Saved state goes through a store with atomic writes and schema-checked reads; long work resumes
-  from its last confirmed step; parts of a long-running process are `Startable`.
+- Saved state goes through a store with atomic writes and schema-checked reads, each file with one
+  writer; long work resumes from its last confirmed step; parts of a long-running process are
+  `Startable`, built once in one composition root that passes inputs, not assembled state.
+- Shared state has one owner: views read copies built from a snapshot and numbered changes, ask
+  through named requests, and show what the owner holds; real-time data bypasses the state.
+- Every lint restriction names its fix, and a boundary between layers is a rule.
 - Each new guard was seen to fail on a planted violation.
 - In a package: one default export per module (the value itself when there is one), types in the
   module's `declare module` block, nothing read from the barrel at module scope, and the barrel

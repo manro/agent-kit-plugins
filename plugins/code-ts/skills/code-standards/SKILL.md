@@ -4,14 +4,15 @@ description: >-
   TypeScript structure standard: model stateful or system-facing concepts as classes with `#private`
   state and a narrow public surface, name a file in kebab case and its class and barrel key with the
   same `<what><Role>` (`log-progress-observer.ts` holds `LogProgressObserver`), make parameterless
-  queries `get` accessors and name the rest `getX(…)`/`getIsX(…)`, reuse through composition and
-  never through inheritance, publish notifications as typed events (`EventerBase`), never `on…`
-  callbacks, return an outside system's expected answers as outcome unions and throw typed errors
-  `<Scope><What>Error` (with their `name`) only for faults, and organise modules around the GoF
-  patterns the problem already has (Strategy, Builder, Facade, Adapter, Composite, Chain of
-  Responsibility, Decorator, Command, State). Use when writing, refactoring, reviewing, or designing
-  TypeScript or TSX — scripts, CLIs, libraries, services — and when choosing between a class and a
-  function or deciding how to split a module.
+  queries `get` accessors and name the rest `getX(…)`/`getIsX(…)`, name things as a person would
+  look for them, construct with `(deps, options?)` in one dependency order, separate thoughts with
+  blank lines, reuse through composition and never through inheritance, publish notifications as
+  typed events (`EventerBase`), never `on…` callbacks, return an outside system's expected answers
+  as outcome unions and throw typed errors `<Scope><What>Error` (with their `name`) only for faults,
+  and organise modules around the GoF patterns the problem already has (Strategy, Builder, Facade,
+  Adapter, Composite, Chain of Responsibility, Decorator, Command, State). Use when writing,
+  refactoring, reviewing, or designing TypeScript or TSX — scripts, CLIs, libraries, services — and
+  when choosing between a class and a function or deciding how to split a module.
 ---
 
 # Code Standards
@@ -105,6 +106,20 @@ An abstraction leaks when callers must know how it works to use it. Prevent that
   `new` of an external client deep inside domain code: an adapter (`*.adapter.ts`, every class that
   wraps a tool) is built only in a static factory or the CLI layer and injected, and the checker
   fails a `new` of one anywhere else, through an import or a barrel key alike.
+- **A constructor takes `(deps, options?)`.** `deps` is one object naming every collaborator and
+  setup value, the logger included; `options` is an optional object of values with defaults that
+  tests change (a timeout, a poll timing, a clock as `{ getNowMs }`). The call site names what it
+  passes, nothing can be swapped silently, and a new collaborator is one more key. Each one lands in
+  a `#field` of the same name, so the fields show what the class uses. The logger is never a
+  parameter of its own, and never optional: an optional logger is a part that silently logs nothing.
+  Two kinds keep their own shape: an error class (`(message, { cause })`) and a holder of one value
+  (`new OfflineCache(maxBytes)`).
+- **Every dependency has one name and one place.** The same thing is injected under the same name in
+  every class (`config`, `logger`, a service as its class name), and every deps type, its class's
+  fields, and every call site list the names in one order the repository keeps: configuration first,
+  then setup values, stores, outside clients, services, host parts, functions it calls, and the
+  logger last, alphabetical within a group. A new kind of dependency takes an existing name or joins
+  a group; a repository that lints the order keeps the groups in that rule.
 - **A port lists only what its consumer calls.** An interface over a vendor client, a host API, or a
   message bus declares the members this code uses — a request runner takes one `Fetch` signature, a
   router the four methods of the bus it registers on — never the vendor's whole type, so a fake is a
@@ -162,12 +177,24 @@ says who acts and on what:
   does.
 - **The what is specific.** Name the data, format, or tool (`JsonFieldReader`, `PdfFontReader`,
   `MermaidJobPlanner`), not a generic noun — field, item, content, part, view, record, output,
-  shape. An adapter starts with the tool it wraps (`ResvgSvgRasterizer`, `PrismCodeHighlighter`,
-  `OsascriptRunner`); a `base/utils/` topic is qualified (`typeGuards`, `timeFormatter`).
+  shape. A name answers "what?": `UploadQueueService`, not `UploadService`. An adapter starts with
+  the tool it wraps (`ResvgSvgRasterizer`, `PrismCodeHighlighter`, `OsascriptRunner`); a
+  `base/utils/` topic is qualified (`typeGuards`, `timeFormatter`).
+- **The name a person would look for.** A file and its class are named for what someone searching
+  the tree would type: a noun people already use for the thing wins over a mechanical role
+  (`JsonStorage`, not `JsonFileRW`; `PinoLogger`, not `PinoLogWriter`), and its interface is named
+  for that role. A file whose name already says what it holds is not renamed to fit a pattern.
 - **The role is true.** `Reader` and `Writer` do I/O; a function that returns built text is a
   `Builder` (`captureMarkdownBuilder`), one that turns text into data a `Parser`. A class over one
-  store — a folder, an archive, a copy on disk — that reads and writes it ends in `RW` (`WorkDirRW`,
-  `ZipArchiveRW`); read-only ends in `Reader`, write-only in `Writer`.
+  store — a folder, an archive, a copy on disk — with no such noun that reads and writes it ends in
+  `RW` (`WorkDirRW`, `ZipArchiveRW`); read-only ends in `Reader`, write-only in `Writer`.
+- **A layer is named for what it is**, never after the layer below it: a module that syncs orders
+  over a socket is `orderSync`, not `orderSocket`; only the transport itself is named for the
+  transport.
+- **One word for each recurring thing.** A reply from a server or another process is `response`
+  (never `answer`, `res`, `reply`); a private helper that assembles a value is `#build…`
+  (`#buildUrl`); a helper that joins a path is `get<What>Path(fileName)`. A repository adds its own
+  such words to its `AGENTS.md`, and code uses no synonym for them.
 - **No borrowed meaning.** A name that already means something else to a reader misleads: a module
   reading screen-share steps is `screenStepReader`, not `screenReader`.
 - **Collections say their shape.** A variable, parameter, field, or constant holding a collection,
@@ -193,6 +220,11 @@ says who acts and on what:
 - **Objects carry their role.** A value of a class or role interface ends in that type's role word:
   `progressObserver` holds a `TerminalProgressObserver`, `logger` a `Logger`, `commandLine` a
   `CommandLine`, `zipArchiveRW` a `ZipArchiveRW`.
+- **A collaborator is named for what it is, not what it does for the holder.** A field holding a
+  class is that class's name (`#authService: AuthService`, never `#session: AuthService`), so
+  renaming the class renames its holders; a dependency known by its role takes the role
+  (`#notifier`, `#logger`). Several collaborators of one kind travel as one object typed to what the
+  class uses (`#stores: Pick<Stores, "settings" | "cache">`), never a field each.
 - **Full words.** No single letter or vague word (`value`, `data`, `raw`, `item`, `result`, `ts`,
   `dir`, `err`) names a variable, parameter, or field; name what it holds (`textSizePt`,
   `fieldValue`, `error`). Numeric coordinates `x`, `y`, `w`, `h`, comparator parameters `a`, `b`,
@@ -255,6 +287,39 @@ says who acts and on what:
   boolean, verb, and full-word names, shadowing, field groups, public mutable fields, export key
   order, the `interface` rule, parameter shape, adapter construction, constructor bodies, and
   repeated literals.
+
+## Layout
+
+Prettier lays out each statement; blank lines between statements are the code's paragraphs, so a
+reader sees where one thought ends:
+
+- A block or a statement that spans several lines is followed by a blank line.
+- A group of declarations has a blank line before and after it; consecutive one-line declarations
+  stay together.
+- `return`, `if`, a loop, `switch`, and `try` have a blank line before them.
+- Two expression statements in a row have a blank line between them unless they act on the same
+  subject: the same receiver (`fs.copyFileSync`, then `fs.writeFileSync`), the same function, or the
+  same assigned object (`this.#a = …`, `this.#b = …`). `await` and `void` do not change the subject,
+  and a chain's subject is its root receiver.
+
+```ts
+event.preventDefault();
+
+this.#pendingPathsList.push(filePath);
+
+if (this.#isReady) {
+  this.#schedule();
+}
+
+this.#pendingSignIn = { app, startedAtMs: this.#getNowMs() };
+
+await this.#surface.openInBrowser(authorizeUrl);
+
+return { kind: "started" };
+```
+
+ESLint's `padding-line-between-statements` can hold the first three; the same-subject rule needs a
+rule of the repository's own or review.
 
 ## Composition only
 
@@ -334,7 +399,9 @@ for the only strategy).
 - No circular imports. Two modules that need each other are missing a third concept. A module and
   its own package barrel are the one sanctioned cycle.
 - Variants of data are discriminated unions with an exhaustive `switch` that ends in a `never`
-  check, not class hierarchies.
+  check, not class hierarchies. When two places split the variants between them (a reducer and the
+  effect that runs what needs I/O), each lists every variant, the other's as a bare `case` that
+  returns, so a new variant does not compile until it is placed.
 - Configuration values (colours, sizes, names, paths) live in one typed config object loaded at the
   entry point, not as literals scattered through the domain. Its type is readonly all the way down —
   every field, nested object, and collection (`Readonly<{ …; pathsList: readonly string[] }>`) — so
@@ -459,51 +526,62 @@ Strategy for interchangeable renderers, Adapter around the OS scripting host, co
 
 ```ts
 interface ScriptRunner {
-  run(script: string, args: readonly string[]): string;
+  run(script: string, argsList: readonly string[]): string;
 }
+
+type PdfPaths = Readonly<{ inputPath: string; outputPath: string }>;
 
 interface PdfRenderer {
   readonly id: string;
   readonly isAvailable: boolean;
-  render(input: string, output: string): void;
+  render(paths: PdfPaths): void;
 }
 
 class OfficeAppRenderer implements PdfRenderer {
-  readonly #app: OfficeApp;
-  readonly #scripts: ScriptRunner;
+  readonly #officeApp: OfficeApp;
+  readonly #scriptRunner: ScriptRunner;
 
-  constructor(app: OfficeApp, scripts: ScriptRunner) {
-    this.#app = app;
-    this.#scripts = scripts;
+  constructor({
+    officeApp,
+    scriptRunner
+  }: Readonly<{ officeApp: OfficeApp; scriptRunner: ScriptRunner }>) {
+    this.#officeApp = officeApp;
+    this.#scriptRunner = scriptRunner;
   }
 
   get id(): string {
-    return this.#app.id;
+    return this.#officeApp.id;
   }
 
   get isAvailable(): boolean {
-    return this.#app.isInstalled;
+    return this.#officeApp.isInstalled;
   }
 
-  render(input: string, output: string): void {
-    const staged = this.#app.stage(input);
-    this.#scripts.run(this.#app.exportScript, [staged, output]);
+  render({ inputPath, outputPath }: PdfPaths): void {
+    const stagedPath = this.#officeApp.stage(inputPath);
+
+    this.#scriptRunner.run(this.#officeApp.exportScript, [stagedPath, outputPath]);
   }
 }
 
 class PdfExporter {
-  readonly #renderers: readonly PdfRenderer[];
+  readonly #renderersList: readonly PdfRenderer[];
 
-  constructor(renderers: readonly PdfRenderer[]) {
-    this.#renderers = renderers;
+  constructor({ renderersList }: Readonly<{ renderersList: readonly PdfRenderer[] }>) {
+    this.#renderersList = renderersList;
   }
 
-  export(input: string, output: string, preferred?: string): string {
-    const renderer = this.#renderers.find(r => r.isAvailable && (!preferred || r.id === preferred));
+  export(paths: PdfPaths, preferredId?: string): string {
+    const renderer = this.#renderersList.find(
+      candidate => candidate.isAvailable && (!preferredId || candidate.id === preferredId)
+    );
+
     if (!renderer) {
-      throw new NoRendererError(preferred);
+      throw new PdfRendererMissingError(preferredId);
     }
-    renderer.render(input, output);
+
+    renderer.render(paths);
+
     return renderer.id;
   }
 }
@@ -533,6 +611,11 @@ class PdfExporter {
 - Notifications are events on the publisher, never `on…` callback parameters.
 - Collaborators injected through constructors and typed as interfaces; a port lists only the members
   its consumer calls.
+- A constructor takes `(deps, options?)`, the logger inside `deps`; each dependency has one name
+  everywhere, in the repository's one order, and a field holding a class is named after it.
+- Names are what a person would search for; a recurring thing has one word (`response`).
+- Blank lines separate blocks, declaration groups, and statements on different subjects, and come
+  before `return`, conditions, and loops.
 - Vendor, OS, and process types confined to adapters.
 - An outside system's expected answers are union members the caller switches on; faults throw; a
   request across a process boundary answers a result and never rejects; every outside call has a

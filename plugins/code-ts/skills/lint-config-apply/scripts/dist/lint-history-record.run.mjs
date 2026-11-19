@@ -1,2 +1,2 @@
 import { createRequire as bundleCreateRequire } from "node:module"; const require = bundleCreateRequire(import.meta.url);
-import{a as o,b as m}from"./chunks/chunk-V7INSRBJ.mjs";import"./chunks/chunk-6FS4S2HB.mjs";import"./chunks/chunk-EP2TN33Z.mjs";var r=new m.cli.commands.RecordCommand({rootPath:process.cwd()});process.exitCode=await o.runCli({name:"lint-history-record",summary:r.summary,commandsList:[r],argvSource:process});
+import{a as o,b as m}from"./chunks/chunk-DW4C7ZIJ.mjs";import"./chunks/chunk-6FS4S2HB.mjs";import"./chunks/chunk-EP2TN33Z.mjs";var r=new m.cli.commands.RecordCommand({rootPath:process.cwd()});process.exitCode=await o.runCli({name:"lint-history-record",summary:r.summary,commandsList:[r],argvSource:process});
