@@ -65,16 +65,18 @@ A page is any Markdown file outside `raw/`, `assets/`, and folders starting with
 `log.md` is append-only, newest entry last. Each entry is a heading
 `## [YYYY-MM-DD] <op> | <title>`, with any detail in a paragraph under it. `<op>` is a short
 lowercase verb: `create`, `ingest`, `update`, `supersede`, `move`, `drop`. Past entries are never
-edited or reordered.
+reordered or reworded; the one edit they take is a link target: a moved page's new path, or plain
+text for a dropped page.
 
 ## Ingest, query, lint
 
-- **Ingest**: save the source to `raw/`, write or update the page that cites it, list the page in
-  its topic `index.md`, and append a log entry.
-- **Query**: answer from the pages and cite them. When the answer will be asked again, file it back
-  as a page or an update, so the next query is cheaper.
+- **Ingest** (the `wiki-ingest` skill): save the source to `raw/`, write or update the page that
+  cites it, list the page in its topic `index.md`, and append a log entry.
+- **Query** (the `wiki-maintenance` skill, with every other change to pages): answer from the pages
+  and cite them. When the answer will be asked again, file it back as a page or an update, so the
+  next query is cheaper.
 - **Lint**: run the `wiki-lint` skill after every change. It checks page names and frontmatter,
-  links, orphans, and log headings{{line-width-note}}.
+  links, orphans, uncited captures, and log headings{{line-width-note}}.
 
 ## Provenance and supersede
 
