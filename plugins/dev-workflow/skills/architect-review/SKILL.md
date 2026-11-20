@@ -1,11 +1,9 @@
 ---
 name: architect-review
 description: >-
-  Reviews system design decisions, architectural patterns, and technology choices at the macro
-  level, reports only critical pitfalls with their evidence and the smallest practical correction,
-  and explains them with simple Mermaid diagrams. Use when the user asks for an architecture or
-  design review, or when a plan or change makes a decision that is hard to reverse. [Input]:
-  optional design, document, path, or question; the current repository's architecture when none.
+  Reviews architecture, design patterns, and technology choices, and reports only critical pitfalls
+  with evidence, the smallest correction, and simple Mermaid diagrams. Use when asked for an
+  architecture or design review, or when a plan or change makes a decision that is hard to reverse.
 ---
 
 # Architecture Review

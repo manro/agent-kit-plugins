@@ -1,18 +1,10 @@
 ---
 name: code-standards
 description: >-
-  TypeScript structure standard: model stateful or system-facing concepts as classes with `#private`
-  state and a narrow public surface, name a file in kebab case and its class and barrel key with the
-  same `<what><Role>` (`log-progress-observer.ts` holds `LogProgressObserver`), make parameterless
-  queries `get` accessors and name the rest `getX(…)`/`getIsX(…)`, name things as a person would
-  look for them, construct with `(deps, options?)` in one dependency order, separate thoughts with
-  blank lines, reuse through composition and never through inheritance, publish notifications as
-  typed events (`EventerBase`), never `on…` callbacks, return an outside system's expected answers
-  as outcome unions and throw typed errors `<Scope><What>Error` (with their `name`) only for faults,
-  and organise modules around the GoF patterns the problem already has (Strategy, Builder, Facade,
-  Adapter, Composite, Chain of Responsibility, Decorator, Command, State). Use when writing,
-  refactoring, reviewing, or designing TypeScript or TSX — scripts, CLIs, libraries, services — and
-  when choosing between a class and a function or deciding how to split a module.
+  TypeScript structure standard: classes with `#private` state, naming, `(deps, options?)`
+  constructors, layout, composition over inheritance, typed events and errors, and GoF patterns. Use
+  when writing, refactoring, reviewing, or designing TypeScript or TSX, or choosing a class or a
+  function.
 ---
 
 # Code Standards

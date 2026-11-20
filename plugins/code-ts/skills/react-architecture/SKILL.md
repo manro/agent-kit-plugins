@@ -1,13 +1,9 @@
 ---
 name: react-architecture
 description: >-
-  React standard for TypeScript apps: `.tsx` only for components and hooks, one component
-  declaration (`const Button: React.FC<Props>` plus its `displayName`), props named `Props`,
-  components that only render while effects and subscriptions live in named hooks, hooks that return
-  stable values, screens in feature folders with their own hooks, shared building blocks in
-  `components/ui/`, state read through one typed selector hook and changed through named requests,
-  real-time streams written past React's render, and styling and state through the repository's own
-  libraries. Use when writing, reviewing, or restructuring React components, hooks, or a React app's
+  React standard for TypeScript apps: components that only render, effects in named hooks with
+  stable results, feature folders, state through a selector hook, and the repository's own state and
+  styling libraries. Use when writing, reviewing, or restructuring React components, hooks, or
   folders.
 ---
 

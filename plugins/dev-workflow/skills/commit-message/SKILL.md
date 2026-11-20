@@ -1,10 +1,9 @@
 ---
 name: commit-message
 description: >-
-  Writes a 5-7 word one-line commit message for a repository's changes: reads the staged diff, or
-  the whole working tree when nothing is staged, matches the style of the recent git log, and never
-  stages, commits, or pushes. Use when proposing a commit message at the end of a change, when the
-  user asks what to call a commit.
+  Writes a 5-7 word one-line commit message from the staged diff, or the working tree when nothing
+  is staged, in the style of the recent git log; never stages or commits. Use when proposing a
+  commit message or when the user asks what to call a commit.
 ---
 
 # Commit Message

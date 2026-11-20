@@ -1,11 +1,9 @@
 ---
 name: code-annotation
 description: >-
-  Enforces comment discipline on every code edit: zero comments by default, one line when a comment
-  earns its place by naming the bug its absence invites. Bans narration and meta-comments; covers
-  TODO format, numbered step comments in ordered sequences, calibrating to sibling files, and
-  trimming a branch's comments. Use when writing, modifying, or reviewing code, and when trimming
-  comments across a branch or delegating that trim.
+  Comment discipline for every code edit: no comments by default, one line when a comment names the
+  bug its absence invites; no narration or meta-comments. Use when writing, modifying, or reviewing
+  code, and when trimming a branch's comments.
 ---
 
 # Code Annotation

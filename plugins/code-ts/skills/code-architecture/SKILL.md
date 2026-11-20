@@ -1,17 +1,9 @@
 ---
 name: code-architecture
 description: >-
-  Architecture standard for TypeScript packages under `src/`: when an engine leaves a skill to
-  become an app, apps versus libs and the dependency direction between skills, apps, and libs, the
-  base, core, and implementation layers inside and between packages, `*.run.ts` entries, the scoped
-  package anatomy (names, `#<folder>` alias, barrels and type roots, environment tsconfigs, README),
-  an app's command layer and CLI contract, composition roots and lifecycle, the host as an outside
-  system, contracts between processes, state with one owner and read-only copies, boundary
-  validation of owned input and outside data, secrets, state that outlives a run, determinism and
-  byte-level regression gates, lint rules that explain themselves, and the checklist for adding a
-  package. Use when creating, moving, splitting, or reviewing code under `src/apps/` or `src/libs/`,
-  adding a package or a dependency, or deciding whether code belongs in a skill script, an app, or a
-  lib.
+  Architecture standard for TypeScript packages: apps versus libs, layers, package anatomy,
+  composition roots, state with one owner, and boundary validation. Use when creating, moving, or
+  reviewing code under `src/apps/` or `src/libs/`, or adding a package or a dependency.
 ---
 
 # Code Architecture

@@ -1,14 +1,9 @@
 ---
 name: code-unit-tests-architecture
 description: >-
-  Unit-test standard for TypeScript packages under `src/`: which code gets a node:test suite and
-  which a real run, where suites live (`test/` mirroring `src/`, one per module), how a suite
-  reaches code through the package's barrel and type root, fakes typed by the collaborator's
-  interface instead of processes or mocking, silent and memory loggers, temp-dir fixtures,
-  behaviour-sentence test names, the `barrelLoad` guard, type-level assertions, real-run scripts
-  that keep the user's data out, how suites typecheck, and how to run them. Use when writing,
-  moving, or reviewing a test under `src/apps/*/test/` or `src/libs/*/test/`, adding or moving a
-  module with logic to cover, or deciding how to test code that runs a process.
+  Unit-test standard for TypeScript packages: node:test suites in `test/` mirroring `src/`, typed
+  fakes instead of mocks, temp-dir fixtures, and behaviour-sentence names. Use when writing, moving,
+  or reviewing tests, or deciding how to test code that runs a process.
 ---
 
 # Code Unit Tests Architecture

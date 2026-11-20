@@ -1,11 +1,9 @@
 ---
 name: pr-description
 description: >-
-  Writes or updates a pull request's title and description for the people who review it: what
-  changed and why in a few lines, one small Mermaid diagram when the structure or the data flow
-  changed, screenshots when the UI changed, and how it was checked. Before updating an existing PR
-  it checks the branch and that the PR is still open. Use when opening a pull request, when the user
-  asks for a PR description or its update, or after more commits reach an open PR.
+  Writes or updates a pull request's title and description for reviewers: what changed and why, a
+  Mermaid diagram when structure changed, screenshots when the UI changed, and how it was checked.
+  Use when opening a PR, asked for its description, or after new commits reach an open PR.
 ---
 
 # PR Description

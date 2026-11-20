@@ -1,13 +1,9 @@
 ---
 name: lint-config-apply
 description: >-
-  Sets up or updates a repository's ESLint and Prettier configs from agent-kit's shared rules
-  without adding any agent-kit package as a dependency: writes the shared part as one generated
-  region in the repository's own `eslint.config.js` (`eslint.config.ts`, or `.eslintrc.cjs` on the
-  legacy format) and `prettier.config.js`, keeps everything outside the region, and merges
-  agent-kit's updates with the repository's edits inside it, asking the user which side wins. Use
-  when the user asks to set up, add, update, or check lint or formatting config, or to align a
-  repository's lint rules with the shared code standards.
+  Sets up or updates a repository's ESLint and Prettier configs from agent-kit's shared rules as a
+  generated region in its own configs, merging updates with local edits. Use when the user asks to
+  set up, update, or check lint or formatting config, or align lint rules with the code standards.
 ---
 
 # Lint config apply

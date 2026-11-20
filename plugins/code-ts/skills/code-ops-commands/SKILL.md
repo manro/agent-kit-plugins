@@ -1,14 +1,10 @@
 ---
 name: code-ops-commands
 description: >-
-  Standard for commands that change live systems — rotate a credential, migrate or restore data,
-  apply config to running apps, deploy, delete cloud resources: one staged pipeline (Access,
-  Preflight, Plan, Confirm, Execute, Verify, Record) whose first stages never write, access proven
-  before anything runs, confirmation scaled to the blast radius, a failure report naming what
-  changed and the safe next command, a guidance catalog a test keeps complete, and the ledger kept
-  in the live system. Use when writing, reviewing, or planning a CLI command, menu action, or script
-  that writes to a database, a cloud account, a deployed app, or a vendor API, or a read-only tool
-  that signs in to one.
+  Standard for commands that write to a database, cloud account, deployed app, or vendor API: a
+  staged pipeline that proves access and plans before it writes, confirms by blast radius, and
+  reports what changed. Use when writing, reviewing, or planning such a command, menu action, or
+  script.
 ---
 
 # Code Ops Commands

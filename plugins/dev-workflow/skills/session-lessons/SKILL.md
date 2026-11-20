@@ -1,11 +1,9 @@
 ---
 name: session-lessons
 description: >-
-  At the end of a working session, finds the generic decisions it made (the user's corrections,
-  agreed designs, settled conventions, pitfalls that cost a retry) and proposes each as a short rule
-  in the place where the repository keeps that kind of rule, so the next session starts from them.
-  Use when the user asks what to keep from a session, whether the standards missed anything from it,
-  or to absorb its lessons into the repository's agent docs or skills.
+  Finds a session's generic decisions (corrections, agreed designs, settled conventions, costly
+  pitfalls) and proposes each as a short rule where the repository keeps such rules. Use when asked
+  what to keep from a session, what the standards missed, or to absorb its lessons.
 ---
 
 # Session Lessons
