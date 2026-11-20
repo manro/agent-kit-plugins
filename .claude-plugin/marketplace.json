@@ -18,6 +18,11 @@
       "name": "wiki",
       "source": "./plugins/wiki",
       "description": "Markdown knowledge-base vaults: create one and lint it, for Claude Code and Codex."
+    },
+    {
+      "name": "agents-infra",
+      "source": "./plugins/agents-infra",
+      "description": "Agent infrastructure for repositories: audit AGENTS.md, skills, and MCP templates, and link skills for Claude Code."
     }
   ],
   "description": "Personal skills and workflows for Claude Code, Codex, and Cursor."

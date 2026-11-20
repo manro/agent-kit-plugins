@@ -1,0 +1,17 @@
+{
+  "description": "Links .agents/skills into .claude/skills at startup, in repositories that hold both.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"${CLAUDE_PLUGIN_ROOT}/skills/claude-skill-links/scripts/dist/claude-skill-links.run.mjs\" --if-present --log-level warn --root \"${CLAUDE_PROJECT_DIR:-.}\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

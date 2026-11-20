@@ -1,6 +1,6 @@
 {
   "name": "wiki",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "description": "Markdown knowledge-base vaults: create one and lint it, for Claude Code and Codex.",
   "author": {
     "name": "manro"
