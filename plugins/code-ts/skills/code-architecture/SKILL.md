@@ -1,16 +1,16 @@
 ---
 name: code-architecture
 description: >-
-  Architecture standard for TypeScript packages: apps versus libs, layers, package anatomy,
-  composition roots, state with one owner, and boundary validation. Use when creating, moving, or
-  reviewing code under `src/apps/` or `src/libs/`, or adding a package or a dependency.
+  Architecture standard for TypeScript apps, libraries, and skill scripts: package boundaries,
+  layers, composition roots, state, and validation. Use when creating, moving, or reviewing packages
+  or skill scripts, or adding dependencies.
 ---
 
 # Code Architecture
 
-How TypeScript tooling under `src/` is built. The consuming repository names its scope, its libs,
-and its checks in its own wrapper skill or AGENTS.md. Examples use `report-builder` (`RB` / `Rb`)
-and `@<scope>/lib-zip` (`ZIP` / `Zip`).
+How TypeScript packages and skill scripts are built. The consuming repository names its scope, its
+libs, and its checks in its own wrapper skill or AGENTS.md. Examples use `report-builder` (`RB` /
+`Rb`) and `@<scope>/lib-zip` (`ZIP` / `Zip`).
 
 **Package names and folders follow the consuming repository.** Take its scope, its name pattern, and
 where its packages live from its wrapper skill or `AGENTS.md`; when neither says, follow what its
@@ -24,23 +24,23 @@ which package owns it, and how packages connect.
 ## When to use
 
 **MUST** apply when creating, moving, renaming, or splitting a module, folder, or package under
-`src/apps/` or `src/libs/`; adding or moving a dependency; deciding whether code belongs in a skill
-script, an app, or a lib; and reviewing any change under `src/`.
+`src/apps/`, `src/libs/`, or a skill's `scripts/`; adding or moving a dependency; deciding whether
+code belongs in a skill script, an app, or a lib; and reviewing any change in those locations.
 
 ## Scope
 
-- `src/apps/**`, `src/libs/**`
+- `src/apps/**`, `src/libs/**`, and the code and tests owned by a skill's `scripts/`
 - The workspace manifest, environment tsconfig bases, and the lint config's `src/**` overrides
 
 ## Where code lives
 
-| Code                                                                        | Home                                                 |
-| --------------------------------------------------------------------------- | ---------------------------------------------------- |
-| Workflow, judgement, review steps, user-edit protocol, delegation           | The skill's `SKILL.md`                               |
-| Inputs for one use: profiles, starter files, brand rules                    | The skill's `assets/`                                |
-| A helper one skill runs: one job, no tests of its own                       | The skill's `scripts/`, run with `node --import tsx` |
-| An engine: several modules, its own tests, or an input contract to document | An app, `src/apps/<app>/`                            |
-| Code two packages use                                                       | A lib, `src/libs/<lib>/`                             |
+| Code                                                                    | Home                      |
+| ----------------------------------------------------------------------- | ------------------------- |
+| Workflow, judgement, review steps, user-edit protocol, delegation       | The skill's `SKILL.md`    |
+| Inputs for one use: profiles, starter files, brand rules                | The skill's `assets/`     |
+| Tooling owned and run by one skill                                      | The skill's `scripts/`    |
+| An engine with an independent workflow or an input contract to document | An app, `src/apps/<app>/` |
+| Code two packages use                                                   | A lib, `src/libs/<lib>/`  |
 
 - **One home per domain.** A domain is one area of knowledge the code relies on: an operating
   system, an external service, a file format, a tool, a workflow. Everything that belongs to it —
@@ -68,6 +68,18 @@ script, an app, or a lib; and reviewing any change under `src/`.
   application or bundle name); a package passes its own specifics and never spells a platform
   location itself, so supporting another system, or a new install location, changes one lib. The
   lint rejects platform locations outside the platform's lib and tests.
+
+## Skill script packages
+
+A one-file helper can stay directly in the skill's `scripts/`. For a skill-owned package, use
+`scripts/package.json` as the package boundary, `scripts/src/` for implementation, and
+`scripts/test/` for suites that mirror it. Keep the manifest, source, and tests inside the same
+package so local imports resolve in each. Preserve an existing package boundary when splitting
+modules or moving tests, unless the task or repository's conventions call for changing it.
+
+Use `*.run.ts` for TypeScript entry points. Follow the repository's layout for their placement and
+its supported runtime for launching them. When moving an entry point, update its callers and verify
+the normal launch path.
 
 ## Dependency direction
 

@@ -8,21 +8,21 @@ description: >-
 
 # Code Unit Tests Architecture
 
-How the unit tests of TypeScript tooling under `src/` are laid out and written. The consuming
-repository names its scope, its libs, and its checks in its own wrapper skill or AGENTS.md. Examples
-use `report-builder` (`RB` / `Rb`) and `@<scope>/lib-zip` (`ZIP` / `Zip`). `code-architecture`
-decides where code lives and how packages connect, and owns the `code-architecture` § Regression
-gates for moves and refactors; this skill decides how each module is tested.
+How the unit tests of TypeScript packages are laid out and written. The consuming repository names
+its scope, its libs, and its checks in its own wrapper skill or AGENTS.md. Examples use
+`report-builder` (`RB` / `Rb`) and `@<scope>/lib-zip` (`ZIP` / `Zip`). `code-architecture` decides
+where code lives and how packages connect, and owns the `code-architecture` § Regression gates for
+moves and refactors; this skill decides how each module is tested.
 
 ## When to use
 
-**MUST** apply when adding or changing a suite under `src/apps/*/test/` or `src/libs/*/test/`;
-adding a module with logic a suite should cover; moving, renaming, or splitting a module, since its
-suite moves with it; and reviewing any change under `src/` that adds logic or touches a test.
+**MUST** apply when adding or changing a suite in an app, library, or skill script package; adding a
+module with logic a suite should cover; moving, renaming, or splitting a module, since its suite
+moves with it; and reviewing any change in those packages that adds logic or touches a test.
 
 ## Scope
 
-- `src/apps/*/test/**`, `src/libs/*/test/**`
+- `src/apps/*/test/**`, `src/libs/*/test/**`, and a skill script package's `scripts/test/**`
 - Each package's `test` script and the root `test` script
 
 ## What gets a suite

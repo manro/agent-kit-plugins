@@ -58,19 +58,19 @@ The usual MCP templates are `.mcp.json.example`, `.cursor/mcp.json.example`, and
 Every check is a failure unless the table says otherwise. The audited Markdown is `AGENTS.md`,
 `CLAUDE.md`, and every `.md` file under the agents folder.
 
-| Check                                                                                    | Off with             |
-| ---------------------------------------------------------------------------------------- | -------------------- |
-| A backticked `.agents/…`, `AGENTS.md`, or `CLAUDE.md` path exists; `<x>`, `*`, `{}` skip | —                    |
-| A Markdown link resolves: `/` from the root, else from the file; URLs and anchors skip   | —                    |
-| `SKILL.md` frontmatter: `name` equals the folder, lowercase-hyphen, at most 64 chars     | —                    |
-| `SKILL.md` frontmatter: a `description` of at most 1024 chars                            | —                    |
-| Skill folder names are unique                                                            | —                    |
-| The router lists each skill by `` `name` `` or a link to its `SKILL.md`, and no other    | no `--router`        |
-| Each link in the links folder resolves to the skill of its name; no real folder shadows  | —                    |
-| A skill with no link in an existing links folder (warning)                               | —                    |
-| A house `SKILL.md` names no date, ADR record, or month and year; vendored skills skip    | `--no-skill-history` |
-| No Markdown line runs past the limit where it could wrap                                 | no `--line-limit`    |
-| Every MCP template declares the same servers                                             | `--no-mcp-templates` |
+| Check                                                                                      | Off with             |
+| ------------------------------------------------------------------------------------------ | -------------------- |
+| A backticked `.agents/…`, `AGENTS.md`, or `CLAUDE.md` path exists; `<x>`, `*`, `{}` skip   | —                    |
+| A Markdown link resolves: `/` from the root, else from the file; URLs and anchors skip     | —                    |
+| `SKILL.md` frontmatter: `name` equals the folder, lowercase-hyphen, at most 64 chars       | —                    |
+| `SKILL.md` frontmatter: a `description` of at most 1024 chars                              | —                    |
+| Skill folder names are unique                                                              | —                    |
+| The router lists each skill by name or namespaced path in backticks, or a local skill link | no `--router`        |
+| Each link in the links folder resolves to the skill of its name; no real folder shadows    | —                    |
+| A skill with no link in an existing links folder (warning)                                 | —                    |
+| A house `SKILL.md` names no date, ADR record, or month and year; vendored skills skip      | `--no-skill-history` |
+| No Markdown line runs past the limit where it could wrap                                   | no `--line-limit`    |
+| Every MCP template declares the same servers                                               | `--no-mcp-templates` |
 
 Fenced code and inline code hold examples, not links; frontmatter holds no links. A skill is
 vendored when its frontmatter has `license:` or its body a `## License` section.
