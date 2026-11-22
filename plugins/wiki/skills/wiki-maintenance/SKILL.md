@@ -40,6 +40,8 @@ fixed.
 - **Links**: find every link to a moved or dropped page by searching the vault for its vault-root
   path, with and without `.md`, and fix each one in the same change. In past log entries only the
   target changes: the new path for a move, the link's text alone for a drop.
+- **Tags**: every page written follows the schema's § Tags; a merge keeps both pages' tags, less any
+  synonym of a tag already kept.
 - **One writer per file**: edit one page at a time, and never reorder or reword past log entries.
 
 ## Review
@@ -51,6 +53,9 @@ When the user asks for a review, or the log shows none for a long while:
    - pages with no `sources`, or whose sources no longer back their claims;
    - pages on the same subject that should merge;
    - claims that contradict each other across pages;
+   - tags that mean the same (synonyms, spelling variants, singular and plural) or repeat a topic
+     folder, listed with each tag's page count and the one to keep; a rare tag is not wrong by
+     itself;
    - pages whose `updated` is the oldest, with the newest capture on their subject when it is later.
 3. Report the findings as a numbered list, each with the operation that closes it.
 4. Apply only the numbers the user picks, then log `## [<today>] update | Review` with the counts.

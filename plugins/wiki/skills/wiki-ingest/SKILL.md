@@ -48,17 +48,20 @@ empty page.
    - the capture path, `raw/<topic>/<YYYY-MM-DD>-<slug>.<ext>`, with `-2` added when it exists;
    - the page: a new `<topic>/<slug>.md`, or the existing page on the same subject to update (search
      titles, tags, and text first; prefer updating to a near-duplicate);
+   - the page's tags, per the schema's § Tags: tags already on the vault's pages first, a new one
+     only for a distinction none of them makes;
    - the `index.md` line and the log entry.
 5. Show the plan and the omitted strings, and ask once. A dry run stops here; a batch gets one plan
    and one answer.
 6. Write:
    - the capture: the source as fetched, minus the omitted strings, never edited afterwards; a
      Markdown capture opens with `source` (the URL or file) and `captured` (today) frontmatter;
-   - the page from `_templates/page.md`: `title`, `created`, `updated`, and `sources` listing the
-     capture path and the source URL; a summary first, then claims, each backed by a source, and
-     vault-root links to related pages;
+   - the page from `_templates/page.md`: `title`, `created`, `updated`, the planned `tags`, and
+     `sources` listing the capture path and the source URL; a summary first, then claims, each
+     backed by a source, and vault-root links to related pages;
    - on an existing page: the new claims with their source, a contradicted claim moved under
-     `## Superseded` (never deleted), `updated` set to today, and the capture added to `sources`;
+     `## Superseded` (never deleted), `updated` set to today, the capture added to `sources`, and
+     any planned tag it lacks;
    - the page's line in its topic `index.md`, and a new topic's link in the home `index.md`;
    - `## [<today>] ingest | <title>` at the bottom of `log.md`.
 7. Search every file the run wrote (captures, pages, indexes, and the log, frontmatter included) for

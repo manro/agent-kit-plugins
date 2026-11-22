@@ -48,7 +48,14 @@ A page is any Markdown file outside `raw/`, `assets/`, and folders starting with
 | `title`             | yes      | The page title, also its `#` heading                    |
 | `created`/`updated` | yes      | `YYYY-MM-DD`; `updated` moves with every content change |
 | `sources`           | expected | `raw/` captures or URLs the claims rest on              |
-| `tags`              | no       | Free-form labels                                        |
+| `tags`              | no       | Labels that cut across topics, per [§ Tags](#tags)      |
+
+## Tags
+
+`tags` labels a page across topic folders, for Obsidian's tag pane and for search. A tag is a
+lowercase kebab-case word without `#` (`incident-response`), and never the page's own topic folder.
+Reuse a tag the vault already has for the same meaning before adding one. One to three tags fit most
+pages, and a page with none is fine. Captures, indexes, and the log carry none.
 
 ## Links
 

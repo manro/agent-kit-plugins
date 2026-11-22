@@ -1,6 +1,6 @@
 {
   "name": "dev-workflow",
-  "version": "0.19.1",
+  "version": "0.20.0",
   "description": "Reusable development workflows for Claude Code and Codex.",
   "author": {
     "name": "manro"

@@ -46,6 +46,7 @@ A vault is a folder holding `WIKI.md`. Every `.md` file in it is a note, except 
 | No frontmatter, or no `title`, `created`, or `updated`                    | pages | failure |
 | `created` or `updated` not `YYYY-MM-DD`                                   | pages | warning |
 | No `sources`                                                              | pages | warning |
+| `tags` not a list of unique lowercase kebab-case words (none is fine)     | pages | warning |
 | Orphan: no index or other page links to it (a log entry does not count)   | pages | warning |
 | Uncited: no index or page lists the capture in `sources` or links to it   | raw   | warning |
 | `##` heading in a `log.md` not `## [YYYY-MM-DD] <op> \| <title>`          | logs  | warning |
