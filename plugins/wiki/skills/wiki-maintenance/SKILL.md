@@ -1,9 +1,8 @@
 ---
 name: wiki-maintenance
 description: >-
-  Keeps a Markdown wiki vault true and connected: answers from its pages and files the answer back,
-  updates and supersedes claims, moves, merges, and drops pages with their links, and reviews it for
-  stale, duplicate, or uncited content. Use when changing a vault's pages other than by ingest.
+  Answers questions from a Markdown wiki with citations, reviews its content, and maintains pages
+  and links. Use for vault questions or edits other than ingest. Save an answer only when asked.
 ---
 
 # Wiki maintenance
@@ -21,13 +20,13 @@ schema are `wiki-config`'s.
 
 ## Operations
 
-Read the vault's `WIKI.md` first; where it differs from this skill, the schema wins. Each operation
-ends with its log entry, `## [<today>] <op> | <title>`, and a `wiki-lint` run whose failures are
-fixed.
+Read the vault's `WIKI.md` first and follow its schema for any write. A question or review is
+read-only unless the user asks to save an answer or apply an edit. After a write, add
+`## [<today>] <op> | <title>` to the log and run `wiki-lint` for the changes.
 
 | Operation | Steps                                                                                     | Op          |
 | --------- | ----------------------------------------------------------------------------------------- | ----------- |
-| Query     | Answer from the pages and cite them; when the answer will be asked again, file it back    | `create`    |
+| Query     | Answer from the pages and cite them                                                       | —           |
 | Update    | Add the new claim with its source, supersede the old one, set `updated` to today          | `update`    |
 | Supersede | Move a claim that is no longer true under `## Superseded` with the date; never delete it  | `supersede` |
 | Move      | Move or rename the page, then rewrite every link to its old vault-root path               | `move`      |
@@ -35,8 +34,9 @@ fixed.
 | Drop      | Remove a page only on the user's yes, with its index line and every link to it            | `drop`      |
 | New topic | Create `<topic>/index.md`, link it from the home `index.md` and the schema's topic list   | `create`    |
 
-- **Filing back** a query writes a page or an update whose `sources` are the sources of the pages
-  the answer rests on; an answer with no source stays in the chat.
+- **Filing back** requires an explicit request to save the answer. Create or update a page with the
+  sources of the pages the answer rests on and log the write. An answer with no source stays in the
+  chat.
 - **Links**: find every link to a moved or dropped page by searching the vault for its vault-root
   path, with and without `.md`, and fix each one in the same change. In past log entries only the
   target changes: the new path for a move, the link's text alone for a drop.
@@ -46,7 +46,7 @@ fixed.
 
 ## Review
 
-When the user asks for a review, or the log shows none for a long while:
+When the user asks for a review:
 
 1. Run the `wiki-lint` skill; its orphans and uncited captures are the first findings.
 2. Add what the script cannot see:

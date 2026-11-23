@@ -82,9 +82,11 @@ Tokens are words times 4/3.
 ## Workflow
 
 1. Run the script and read its report: failures, warnings, budget, impact, status.
-2. Fix every failure the current change caused; list the others to the user.
-3. A missing link means `claude-skill-links` has not run since a skill was added: run it.
-4. Rerun until the status is `PASS`. Mention a large always-loaded token increase to the user.
+2. For an implementation task, fix failures introduced by the current change. If link repair is in
+   scope, use `claude-skill-links`. A request to audit or review reports findings only.
+3. Rerun after fixes and report the actual CLI status. For a scoped change, finish once no failure
+   it introduced remains. List pre-existing findings separately. Require an overall `PASS` when the
+   task authorizes fixing all findings. Mention a large increase in always-loaded tokens.
 
 | Exit | Meaning                                       |
 | ---- | --------------------------------------------- |

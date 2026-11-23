@@ -12,14 +12,13 @@ How TypeScript packages and skill scripts are built. The consuming repository na
 libs, and its checks in its own wrapper skill or AGENTS.md. Examples use `report-builder` (`RB` /
 `Rb`) and `@<scope>/lib-zip` (`ZIP` / `Zip`).
 
-**Package names and folders follow the consuming repository.** Take its scope, its name pattern, and
-where its packages live from its wrapper skill or `AGENTS.md`; when neither says, follow what its
-existing `package.json` files already do. `@<scope>/lib-<folder>` under `src/libs/` and
-`@<scope>/app-<folder>` under `src/apps/` are this skill's layout, not a rename to impose. When
-existing names disagree with each other, or the repository has no packages and states no convention,
-ask the user before naming or placing a package, and offer this layout as the default.
-`code-standards` decides the shape of code inside a module; this skill decides where code lives,
-which package owns it, and how packages connect.
+**The consuming repository owns its layout and toolchain.** Read its wrapper skill or `AGENTS.md`,
+then check the existing packages and CI for package names, workspace layout, package manager,
+TypeScript runtime, and launch commands. Preserve those choices in an existing project. Use the
+package layout and pnpm/tsx commands below as defaults where the project has no established choice.
+Ask when a real conflict would change existing package boundaries or entry points. `code-standards`
+decides the shape of code inside a module; this skill decides where code lives, which package owns
+it, and how packages connect.
 
 ## When to use
 
@@ -55,10 +54,10 @@ code belongs in a skill script, an app, or a lib; and reviewing any change in th
 - **An app is generic.** Every specific — template, profile, content, output path — arrives on argv
   or in a file named on argv. Nothing defaults to one template: report-builder requires
   `--profile <path>`, so a second template needs a profile, not code.
-- **The skill is the agentic plane.** It runs the app as `pnpm app:<app> <command>` and never
-  imports `src/`. The app's README and `docs/` own the engine facts (commands, input contract,
-  engine notes) and `SKILL.md` links them instead of restating them. A behaviour change goes into
-  the app, where every caller gets it.
+- **The skill calls the app through its documented entry point.** It does not import `src/`. The
+  app's README and `docs/` own the engine facts (commands, input contract, engine notes) and
+  `SKILL.md` links them instead of restating them. A behaviour change goes into the app, where every
+  caller gets it.
 - **A lib waits for its second consumer.** Code generic in shape but used by one package stays in
   that package until a second package needs it.
 - **An operating system's layout lives in its platform lib.** Where the system installs
@@ -85,7 +84,7 @@ the normal launch path.
 
 ```mermaid
 flowchart LR
-  skill["skill"] -->|"pnpm app command"| app["@<scope>/app-<folder>"]
+  skill["skill"] -->|"documented command"| app["@<scope>/app-<folder>"]
   app --> lib["@<scope>/lib-<folder>"]
   lib --> other["@<scope>/lib-<folder>"]
 ```
@@ -161,8 +160,9 @@ flowchart TB
 
 ## Package anatomy
 
-Every folder under `src/apps/` and `src/libs/` is a private pnpm workspace package, consumed as
-TypeScript source through tsx with no build step.
+In the default layout, each folder under `src/apps/` and `src/libs/` is a private pnpm workspace
+package, consumed as TypeScript source through tsx. Apply the checks for this layout where the
+repository adopts it. For an existing layout, use its package boundaries and launch path.
 
 | Path                         | Lib                    | App            | Holds                                                                                                                                                                                                         |
 | ---------------------------- | ---------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -231,8 +231,8 @@ TypeScript source through tsx with no build step.
 - **Folders name concepts** (`deck/`, `layout/`, `verify/`), never build output. `build/` and
   `dist/` collide with ignore patterns: an unanchored `build/` hides every folder of that name from
   git and lint. Composition lives in `core/composer/`.
-- **An app runs as `pnpm app:<app> <command>`.** A root script running an app is named `app:<app>`
-  or `app:<app>:<variant>`; the checks check this. For example,
+- **In this layout, an app runs as `pnpm app:<app> <command>`.** Its root script is named
+  `app:<app>` or `app:<app>:<variant>`; the checks check this. For example,
   `"app:<app>": "src/apps/<app>/bin/run.sh cli"`, and `"app:<app>:interactive"` with
   `cli-interactive`. `bin/run.sh` is committed in each package and says how its entries run
   (`exec node --import tsx src/<entry>.run.ts`); a TypeScript entry carries no shebang. Every copy
@@ -347,8 +347,8 @@ The entry, domain, and adapter layers of `code-standards` § Module organisation
 
 ### CLI contract
 
-- `pnpm app:<app> <command>` runs a command; `pnpm app:<app>` alone lists the commands; an unknown
-  command or a bad flag prints usage.
+- The documented entry point runs a command and can list commands, for example
+  `pnpm app:<app> <command>` or `pnpm app:<app>`. An unknown command or bad flag prints usage.
 - Flags are `--flag value` or `--flag=value`; a bare flag reads as `"true"`.
 - Exit `0` when done, `1` on bad input or a failed step, `2` for findings the caller must act on
   (`verify`).
@@ -528,19 +528,19 @@ them.
 
 ## Adding a package
 
-1. Name its base, core, and implementation per [§ Layers](#layers), then create `src/apps/<folder>/`
-   or `src/libs/<folder>/` with the files in [§ Package anatomy](#package-anatomy), and run
-   `pnpm install` to link it.
+1. Follow the existing workspace's package and toolchain conventions. In the default layout, create
+   `src/apps/<folder>/` or `src/libs/<folder>/` with the files in
+   [§ Package anatomy](#package-anatomy) and run `pnpm install` to link it.
 2. In the lint config, add a per-package override for `src/<apps|libs>/<folder>/**/*.ts` whose
    `@typescript-eslint/no-restricted-imports` bans its own name (`@<scope>/lib-<folder>` or
    `@<scope>/app-<folder>`); an app's also bans every other app package. Repeat the `src/**/*.ts`
    pattern group in it: an override replaces a rule's options rather than merging them. Name each
    adapter `<name>.adapter.ts`.
-3. For an app, copy another app's `bin/run.sh` (it keeps its executable bit) and add the root script
-   `"app:<folder>": "src/apps/<folder>/bin/run.sh cli"`. Give a package with `test/` the `test`
-   script.
+3. Follow the project's app launcher convention. In the default layout, copy an app's `bin/run.sh`
+   with its executable bit and add the `app:<folder>` root script. Add the package's test command
+   when it has tests.
 4. Add the package's row and graph edges to the repository's architecture doc.
-5. Link the README from the owning skill, and name `pnpm app:<folder>` in that skill's router row.
+5. Link the README from the owning skill and name the real entry point in its router row, if any.
 6. Run the repository's format, lint, typecheck, test, and package anatomy checks.
 
 ## Review checklist

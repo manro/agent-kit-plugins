@@ -14,6 +14,9 @@ its scope, its libs, and its checks in its own wrapper skill or AGENTS.md. Examp
 where code lives and how packages connect, and owns the `code-architecture` § Regression gates for
 moves and refactors; this skill decides how each module is tested.
 
+Use the repository's runner and test commands. The examples below use the default `node:test` setup.
+Apply the same test design with the project's runner where one is already established.
+
 ## When to use
 
 **MUST** apply when adding or changing a suite in an app, library, or skill script package; adding a

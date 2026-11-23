@@ -37,10 +37,9 @@ empty page.
 1. Read the vault's `WIKI.md`. Where it differs from this skill (layout, page kinds, frontmatter),
    the schema wins.
 2. Fetch the source.
-3. Classify it against the schema's § Sensitivity and list each string that stays out: credentials,
-   tokens, and personal data that should not live in shared git. A source URL whose query or
-   fragment carries a token, key, or signature is recorded without it. Keep the neutral takeaway,
-   and note `Omitted: <what kind>` on the page.
+3. Classify it against the schema's § Sensitivity. Keep exact excluded values for local redaction
+   and verification only. A source URL whose query or fragment carries a token, key, or signature is
+   recorded without it. Keep the neutral takeaway, and note `Omitted: <what kind>` on the page.
 4. Plan, without writing:
    - the topic folder, from the user or the closest existing topic; a new topic is named in the
      plan;
@@ -51,8 +50,8 @@ empty page.
    - the page's tags, per the schema's § Tags: tags already on the vault's pages first, a new one
      only for a distinction none of them makes;
    - the `index.md` line and the log entry.
-5. Show the plan and the omitted strings, and ask once. A dry run stops here; a batch gets one plan
-   and one answer.
+5. Show the plan and the categories and counts of exclusions. Keep the exact values out of messages,
+   logs, and delegated inputs. Ask once. A dry run stops here; a batch gets one plan and one answer.
 6. Write:
    - the capture: the source as fetched, minus the omitted strings, never edited afterwards; a
      Markdown capture opens with `source` (the URL or file) and `captured` (today) frontmatter;
@@ -64,8 +63,8 @@ empty page.
      any planned tag it lacks;
    - the page's line in its topic `index.md`, and a new topic's link in the home `index.md`;
    - `## [<today>] ingest | <title>` at the bottom of `log.md`.
-7. Search every file the run wrote (captures, pages, indexes, and the log, frontmatter included) for
-   the omitted strings; remove any that slipped through.
+7. Locally check every file the run wrote (captures, pages, indexes, and the log, frontmatter
+   included) for excluded values. Remove any that slipped through without printing matches.
 8. Run the `wiki-lint` skill and fix every failure the run caused.
 
 ## Rules
@@ -74,4 +73,4 @@ empty page.
   older one.
 - Distilling and deciding what stays out are judgment: run them on the strongest model the session
   has. In a large batch, a faster sub-agent may write the captures and pages from the confirmed plan
-  and the omitted-strings list, without judging sensitivity again; step 7 still runs here.
+  and source material already redacted by the primary agent. Step 7 stays with the primary agent.

@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '%s\\n' 'Agent Kit dev-workflow. Use commit-message for commit text, pr-description for PR descriptions, and architect-review for architecture reviews.' 'Apply simplification guidance to the current coding task. Follow project rules and task-specific skills for tests and comments.'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

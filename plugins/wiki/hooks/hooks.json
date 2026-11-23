@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '%s\\n' 'Agent Kit wiki. Use wiki-maintenance for vault questions and edits, wiki-ingest to capture a source, and wiki-lint after vault changes. A question is read-only unless the user asks to save or change content.'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

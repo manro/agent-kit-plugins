@@ -1,9 +1,9 @@
 ---
 name: claude-skill-links
 description: >-
-  Links each skill folder under `.agents/skills/` into `.claude/skills/` so Claude Code finds the
-  skills Codex and Cursor read natively. Runs at Claude Code startup in repositories that hold both
-  folders. Use after adding, renaming, or removing a skill, or when Claude Code misses one.
+  Links skills from `.agents/skills/` into `.claude/skills/`. Runs at Claude Code startup when
+  `.agents/skills/` and `.claude/` exist and creates the links folder as needed. Use after adding,
+  renaming, or removing a skill, or when Claude Code misses one.
 ---
 
 # Claude skill links
@@ -21,10 +21,10 @@ not list a skill that exists there.
 
 ## How it runs
 
-The plugin's `SessionStart` hook runs the script at every Claude Code startup. It acts only when the
-project holds both `.agents/skills/` and `.claude/skills/`; a repository opts in by creating
-`.claude/skills/` (commit a `.gitkeep` and gitignore the links). The hook prints nothing on success,
-and it is off for Codex, which reads `.agents/skills/` itself.
+The plugin's `SessionStart` hook runs the script at every Claude Code startup. When both
+`.agents/skills/` and `.claude/` exist, it creates `.claude/skills/` as needed and syncs the links.
+Gitignore the generated links in projects that use this hook. When links change, the hook asks
+Claude Code to rescan skills before the first prompt. Codex reads `.agents/skills/` itself.
 
 Run it by hand after changing skills mid-session, from the repository root, with Node 22 or later:
 
@@ -32,13 +32,14 @@ Run it by hand after changing skills mid-session, from the repository root, with
 node <this skill's folder>/scripts/dist/claude-skill-links.run.mjs
 ```
 
-| Flag           | Default          | Meaning                                         |
-| -------------- | ---------------- | ----------------------------------------------- |
-| `--root`       | `.`              | Repository root                                 |
-| `--skills-dir` | `.agents/skills` | Skills folder, relative to the root             |
-| `--links-dir`  | `.claude/skills` | Links folder, relative to the root; created     |
-| `--if-present` | off              | Do nothing unless both folders exist (the hook) |
-| `--log-level`  | `info`           | `warn` hides the list of changes                |
+| Flag              | Default          | Meaning                                                 |
+| ----------------- | ---------------- | ------------------------------------------------------- |
+| `--root`          | `.`              | Repository root                                         |
+| `--skills-dir`    | `.agents/skills` | Skills folder, relative to the root                     |
+| `--links-dir`     | `.claude/skills` | Links folder, relative to the root; created             |
+| `--if-present`    | off              | Require the source folder and the links folder's parent |
+| `--reload-skills` | off              | Emit a Claude startup rescan request if links change    |
+| `--log-level`     | `info`           | `warn` hides the list of changes                        |
 
 Claude Code watches `.claude/skills/` live; when the folder itself was created after launch, run
 `/reload-skills`.
@@ -53,10 +54,10 @@ Claude Code watches `.claude/skills/` live; when the folder itself was created a
 - Two skills with the same folder name fail the run before any change: Claude Code flattens skills
   by folder name and can load only one.
 
-| Exit | Meaning                                                          |
-| ---- | ---------------------------------------------------------------- |
-| 0    | Links match the skills, or `--if-present` found a folder missing |
-| 1    | Bad arguments, no skills folder, or a duplicate skill name       |
+| Exit | Meaning                                                    |
+| ---- | ---------------------------------------------------------- |
+| 0    | Links match the skills, or `--if-present` skipped the sync |
+| 1    | Bad arguments, no skills folder, or a duplicate skill name |
 
 ## Scripts
 

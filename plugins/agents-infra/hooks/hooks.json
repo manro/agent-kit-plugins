@@ -1,5 +1,4 @@
 {
-  "description": "Links .agents/skills into .claude/skills at startup, in repositories that hold both.",
   "hooks": {
     "SessionStart": [
       {
@@ -7,8 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"${CLAUDE_PLUGIN_ROOT}/skills/claude-skill-links/scripts/dist/claude-skill-links.run.mjs\" --if-present --log-level warn --root \"${CLAUDE_PROJECT_DIR:-.}\"",
-            "timeout": 30
+            "command": "printf '%s\\n' 'Agent Kit agents-infra. When changing agent instructions, skills, or templates, use agents-infra-audit. Use the project rules to scope checks and fixes.'",
+            "timeout": 5
           }
         ]
       }

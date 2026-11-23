@@ -57,11 +57,11 @@ other path when a file of the same name exists elsewhere in the vault.
 ## Workflow
 
 1. Run the script and read its report: failures, warnings, then the counts.
-2. Fix every failure in the notes the current change touched. List the other failures to the user
-   rather than fixing notes outside the change.
-3. Fix a warning when the fix is plain (a missing `sources` entry the page already cites, an index
-   line for an orphan); report the rest.
-4. Rerun until the status is `PASS`.
+2. For an implementation task, fix failures introduced by the current change. A warning with a
+   clear, in-scope fix can be corrected too. A request to check or review reports findings only.
+3. Rerun after fixes and report the actual CLI status. For a scoped change, finish once no failure
+   it introduced remains. List pre-existing findings separately. Require an overall `PASS` when the
+   task authorizes fixing the whole vault.
 
 | Exit | Meaning                                     |
 | ---- | ------------------------------------------- |
