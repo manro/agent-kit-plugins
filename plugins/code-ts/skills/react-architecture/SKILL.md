@@ -84,14 +84,15 @@ place of `cli/` and `skeleton/` beside it:
 
 ```text
 src/
-  config/                 runtime settings, read once at startup
+  config/                 runtime settings, read once at startup, and the route list
   base/                   what knows no concept: log context, generic hooks
   core/<concept>/         one domain: its endpoints, service, model, and types
   core/http/              shared mechanics are concepts too: the HTTP client,
   core/router/            the typed router,
   core/overlay/           and the dialog host
   app/
-    App.tsx               the providers and the route table
+    App.tsx               the providers
+    router/               the route table, its lazy pages, and the guard
     pages/<page>/         <Name>Page.tsx, sections/, hooks/, and the model the page owns
     comp/ui/              building blocks: Button, Field, Dialog
     comp/<feature>/       a component two pages use
@@ -112,8 +113,9 @@ src/
   (`code-architecture` § Inside an app): none subscribes to the window or opens a socket when its
   module loads.
 - **A component moves to `comp/` when a second page uses it**; until then it stays in its page.
-- **Route policy stays in `app/`**: the route table, its guards, and access decisions.
-  `core/router/` holds the mechanics ([§ Routing and overlays](#routing-and-overlays)).
+- **Route policy stays in `app/router/`**: the route table, the guard, and its access decisions.
+  `core/router/` holds the mechanics, and `config/` the route list both read
+  ([§ Routing and overlays](#routing-and-overlays)).
 
 ## Components
 
@@ -196,12 +198,41 @@ src/
 ## Routing and overlays
 
 For a web app; a desktop screen with routes of its own follows them too, with its router mechanics
-in `common/`.
+in `common/`. [references/web-router.md](references/web-router.md) is the full router, every module
+typechecked over React Router 7 and `history` 5 with any state library: build a new router from it,
+and hold an existing one to it.
 
-- **Routes are declared once.** One list holds each route's path pattern and its query keys; links,
-  navigation, params, and query take their types from it (`/video/:id` gives `{ id: string }`), so a
-  link to an undeclared route or without a param fails typecheck. The app reaches the router library
-  only through its router module (`core/router/` in a web app).
+- **Routes are declared once.** One list in `config/` holds each route's path pattern and the query
+  keys it accepts, grouped into zones by the access they need. Links, navigation, params, and query
+  take their types from it (`/video/:id` gives `{ id: string }`), so a link to an undeclared route,
+  without a param, or with an undeclared query key fails typecheck, and reading the query returns
+  only the keys its route declares. The app reaches the router library only through its router
+  module (`core/router/` in a web app).
+- **A route is a payload.** Code above the router passes `{ path, params, query }`; only the router
+  turns a payload into a URL and a location back into a payload, and a location nothing matches is
+  the not-found route.
+- **The router owns the history.** The app creates the one history the router library renders from.
+  Every location passes the guard before any listener hears of it; a refused one is replaced, so
+  Back never returns to it, and stays in the history's log as a refusal; a redirect loop is a fault.
+- **One guard decides access.** It sits in `app/router/`, reads a snapshot through the getter it is
+  built with, and answers `null` or the payload to go to instead, through checks whose order is the
+  policy. It starts nothing, so work a redirect needs belongs to the page it lands on, and a route
+  that only forwards (`/` to the person's home) is a redirect, not a page effect. A refusal and an
+  unknown location are routes (`/no-access`, `/404`). The composition root registers the guard once
+  the session is known, no route renders before that, and it runs the guard again on the current
+  location whenever what the guard reads changes.
+- **The store keeps a copy; the router navigates.** Whatever the state library, the history's change
+  event updates one copy of the current route that selectors read, and every navigation goes through
+  the router's hooks (`useNavigate`, and `useLeaveBlocker` for unsaved work).
+- **A page names its route once** and hands it to the router's hooks, which answer typed to that
+  route; off it, they throw, since the component is mounted where it does not belong. A zone's
+  layout reads the owner id on every route under the zone's prefix.
+- **Page state someone would share lives in the query**: the tab, filters, the open dialog, the
+  selected item. Changing it replaces the location, so Back leaves the page instead of undoing each
+  change; unsaved work stops navigation through one blocker hook.
+- **A layout route keeps its frame.** The layout renders around an `<Outlet />` with the Suspense
+  boundary inside it, so only the content waits for a page's chunk. The route table renders a zone
+  the person cannot enter as the refusal page, so a guard mistake never shows the page.
 - **One dialog host.** A provider at the root owns the portal. A dialog is controlled (`isOpen`,
   `onClose(result)`) and gets focus trapping and keyboard handling from the shared dialog; its
   caller owns whether it is open and what the result means.
@@ -314,6 +345,9 @@ Logic leaves components for hooks, models, and helpers, which suites test per
 - Web app: imports point down, no concept imports `app/`, only `app/` imports the core aggregate,
   and services start at bootstrap.
 - Web app: each model lives as long as its state; Suspense boundaries sit below per-mount models.
+- Web app router, per [references/web-router.md](references/web-router.md): one route list in
+  `config/`; payloads above the router; one history the guard gates; a guard in `app/router/` that
+  only decides; the store copies the route and never navigates; shared page state in the query.
 - Web app: a shell paints before the app's code; the shell entry imports only leaves; pages and
   heavy libraries load behind `import()`; the first load is measured.
 - Web app build: one graph per runtime, hashed assets under revalidated HTML, build facts only in
