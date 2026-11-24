@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "printf '%s\\n' 'Agent Kit code-ts. For TypeScript package boundaries use code-architecture; for TS edits use code-standards and the project lint command through code-linter; for tests use code-unit-tests-architecture. Follow the project layout and toolchain.'",
+            "command": "printf '%s\\n' 'Agent Kit code-ts. For TypeScript package boundaries use code-architecture; for TS edits use code-standards and the project lint command through code-linter; for tests use code-unit-tests-architecture; React and Electron apps add react-architecture and electron-architecture. Follow the project layout and toolchain.'",
             "timeout": 5
           }
         ]

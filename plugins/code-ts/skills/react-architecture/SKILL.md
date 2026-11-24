@@ -39,19 +39,21 @@ layout of a React app, or a web app's entries and chunks.
 |             | Desktop renderer                                     | Web app                                                |
 | ----------- | ---------------------------------------------------- | ------------------------------------------------------ |
 | Runs        | In a window of a desktop shell (Electron), from disk | In a browser tab, downloaded on each visit             |
-| Unit of UI  | A screen: one window, with its own entry             | A page: one route, a lazy chunk of one entry           |
-| State owner | The host process; a screen holds a copy              | The app's own models, over its services and the server |
+| Unit of UI  | A window, with its own entry                         | A page: one route, a lazy chunk of one entry           |
+| State owner | The host process; a window holds a copy              | The app's own models, over its services and the server |
 | First paint | The window shows once its copy holds the snapshot    | A shell paints before the app's code runs              |
 | Layout      | [§ Desktop renderer](#desktop-renderer)              | [§ Web app](#web-app)                                  |
 
-The other sections hold for both kinds, except where a rule names one.
+The other sections hold for both kinds, except where a rule names one. A desktop renderer's host
+(the main process, the preload's bridge, the app scheme, packaging, and updates) follows
+`electron-architecture`.
 
 ## Files and folders
 
 - **`.tsx` is for components and hooks only.** A module with neither (a client, a helper, the mount
   function, types) is `.ts`, and a component or hook never sits in a `.ts` file. Lint can check both
   directions.
-- **A component's file is its PascalCase name** (`SettingsScreen.tsx`, `ui/Button.tsx`), a hook's
+- **A component's file is its PascalCase name** (`SettingsWindow.tsx`, `ui/Button.tsx`), a hook's
   file is the hook (`useServerDraft.tsx`), and every other module follows the repository's naming.
 - **Components are named exports** (`export const Button`), which React's tooling and its readers
   expect. A lazy page keeps its named export, and its `lazy()` call maps it
@@ -61,21 +63,28 @@ The other sections hold for both kinds, except where a rule names one.
 
 ### Desktop renderer
 
-Folders follow screens. A screen is whatever the app shows as one unit: a window, a panel.
+The renderer's folders follow its windows. A window is whatever the app shows as one unit with an
+entry of its own: a window, a panel, a pop-over.
 
 ```text
-common/                   what every screen uses
-  components/ui/          building blocks: Button, Row, Section
-  hooks/                  hooks every screen uses
-  <client>/               the typed client to the state's owner
-  mount-screen.ts         the one mount function
-screens/<screen>/
-  <Name>Screen.tsx
-  sections/               the screen's parts
-  hooks/                  the screen's own hooks
+renderer/
+  assets/                   the default page every window starts from, and the theme
+  common/                   what every window uses
+    bus/                    the state's owner, as a window calls it
+    hooks/                  hooks every window uses (useAppSelector)
+    components/ui/          building blocks: Button, Row, Section
+    window-mount.ts         the one mount function
+  windows/window-<name>/
+    index.ts                mounts the window's component
+    <Name>Window.tsx
+    sections/               the window's parts
+    hooks/                  the window's own hooks
 ```
 
-Code moves to `common/` only when every screen uses it.
+- **Code moves to `common/` only when every window uses it**; until then it stays in its window.
+- **A window reaches its host only through `common/bus/`**: calls that resolve with data or throw,
+  pushes it listens to, and named requests under `bus.actions`. In Electron the bus is built from
+  the preload's bridge (`electron-architecture` § Layout).
 
 ### Web app
 
@@ -152,7 +161,7 @@ src/
 ## Hooks
 
 - **A hook is named for what it gives** (`useServerDraft`, `useRealtimeUpdateStatus`) and lives in
-  its screen's or page's `hooks/`; the shared hooks folder holds only what several units use.
+  its window's or page's `hooks/`; the shared hooks folder holds only what several units use.
 - **What a hook returns stays stable.** Each callback is a `useCallback`, and a returned object is a
   `useMemo` over them, so a caller can pass it on or depend on it.
 - **A generic hook is a function declaration** (`export function useAppSelector<T>(…)`): an arrow
@@ -165,7 +174,7 @@ src/
 
 - **Components never fetch.** They read state through one typed selector hook
   (`useAppSelector(settingsSelectors.watch)`) and change it through named requests. In a desktop
-  renderer the host process owns the state (`code-architecture` § State with one owner): a screen
+  renderer the host process owns the state (`code-architecture` § State with one owner): a window
   never dispatches to its copy or writes it. In a web app the models live in the same process: they
   do the fetching, components read them through the selector hook and call them through hooks, and a
   view whose data has not arrived shows its fallback ([§ Mounting](#mounting)).
@@ -192,14 +201,14 @@ src/
   layout-effect cleanups but keeps its effects. It survives the extra cleanup and setup of strict
   mode.
 - **Real-time streams go past React's render.** Progress and other values that change many times a
-  second go neither through the store nor through a hook every unit shares: the screen or page that
+  second go neither through the store nor through a hook every unit shares: the window or page that
   shows one takes it in a `useRealtime<What>` hook, which writes each value into its element through
   a ref, or into local state only when the kind of state changes, so it renders again on a change of
   kind, not on every tick.
 
 ## Routing and overlays
 
-For a web app; a desktop screen with routes of its own follows them too, with its router mechanics
+For a web app; a desktop window with routes of its own follows them too, with its router mechanics
 in `common/`. [references/web-router.md](references/web-router.md) is the full router, every module
 typechecked over React Router 7 and `history` 5 with any state library: build a new router from it,
 and hold an existing one to it.
@@ -401,7 +410,7 @@ rules.
 ## Mounting
 
 Every React root mounts through one function: strict mode, the providers, and the root element. A
-desktop screen mounts only after its copy holds the snapshot. A web app mounts at once behind its
+desktop window mounts only after its copy holds the snapshot. A web app mounts at once behind its
 shell, and a view that needs data the app does not hold yet shows its fallback. Neither shows a
 placeholder default as real state.
 
@@ -422,7 +431,7 @@ The repository's styling system decides the mechanism; these rules hold in any o
 ## Tests
 
 Logic leaves components for hooks, models, and helpers, which suites test per
-`code-unit-tests-architecture`; a screen's or page's behaviour is checked by a real run.
+`code-unit-tests-architecture`; a window's or page's behaviour is checked by a real run.
 
 ## Review checklist
 

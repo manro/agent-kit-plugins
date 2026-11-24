@@ -128,10 +128,12 @@ flowchart LR
   `@<scope>/app-<folder>`. `exports` lists only `.`, so a deep path does not resolve.
 - Only a `<name>.adapter.ts` file imports a process or native library (`node:child_process`, resvg,
   Prism, puppeteer, mermaid-cli) or the API of the host the app runs inside (an editor's, a desktop
-  shell's, a browser's extension API); the rest of the code calls the adapter. An app with several
-  tools to run keeps one process runner in `base/` (`RB.base.ProcessRunner`), and each tool's
-  wrapper takes it as a collaborator, so its arguments and parsing test without a process. An OS
-  facility two apps use (`osascript`, `textutil`, `zip`, Office export) is a lib adapter.
+  shell's, a browser's extension API); the rest of the code calls the adapter. An Electron main
+  process keeps its host calls in its `shell/` entry layer instead (`electron-architecture` §
+  Layout). An app with several tools to run keeps one process runner in `base/`
+  (`RB.base.ProcessRunner`), and each tool's wrapper takes it as a collaborator, so its arguments
+  and parsing test without a process. An OS facility two apps use (`osascript`, `textutil`, `zip`,
+  Office export) is a lib adapter.
 - A process takes its inputs as an argv array through `execFile`, never interpolated into a shell
   command or script text, so a path with quotes or spaces cannot break out.
 - **The host is an outside system.** In an app that runs inside a framework's process, the code that
@@ -274,11 +276,13 @@ boundaries and launch path. In a single-package repository the table describes t
 - **A package's `src/` is scoped by layer**, per [§ Layers](#layers). Beside its entry files an app
   holds only `cli/` (the entry layer: `commands/`, `interactive/`), `config/`, `core/` (domain code,
   one folder per concept), and `base/` (what several concepts build on); a React web app holds
-  `app/` and `skeleton/` in place of `cli/` (`react-architecture` § Web app); a lib holds `config/`,
-  `core/`, and `base/` beside its `index.ts`; the checks fail on anything else. Folders that share a
-  prefix nest under it (`cli/commands/`, never `cli-commands/`); a hyphen only names one concept
-  (`capture-builder/`). A `core/` of more than about eight concepts groups them into sub-scopes by
-  stage, beside `composer/`: report-builder's `core/input/`, `core/output/`, `core/quality/`.
+  `app/` and `skeleton/` in place of `cli/` (`react-architecture` § Web app); an Electron app holds
+  one folder per process, and its main holds `shell/` in place of `cli/` (`electron-architecture` §
+  Layout); a lib holds `config/`, `core/`, and `base/` beside its `index.ts`; the checks fail on
+  anything else. Folders that share a prefix nest under it (`cli/commands/`, never `cli-commands/`);
+  a hyphen only names one concept (`capture-builder/`). A `core/` of more than about eight concepts
+  groups them into sub-scopes by stage, beside `composer/`: report-builder's `core/input/`,
+  `core/output/`, `core/quality/`.
 - **A role suffix names what a module is, from a closed set**, after the kebab-case stem
   `code-standards` § Names gives every file. `<name>.run.ts` is an entry Node runs, and only it
   reads argv and the working folder and sets the exit code, handing the first two down; nothing
@@ -661,9 +665,9 @@ changes. Code: [references/workers.md](references/workers.md).
   minutes checks it on every target browser. A frozen page's workers freeze with it, and a worker
   does not keep a tab from being frozen or discarded, so work that must survive that saves its
   progress as it goes ([§ State that outlives a run](#state-that-outlives-a-run)). A desktop window
-  that must keep time turns its host's throttling off instead (Electron's
-  `backgroundThrottling: false`); the page then always reads as visible, so the host's own window
-  state tells it when no one is looking.
+  that must keep time turns its host's throttling off instead (`electron-architecture` § Windows);
+  the page then always reads as visible, so the host's own window state tells it when no one is
+  looking.
 - **Work only a viewer needs pauses while hidden.** Polling that refreshes what someone is looking
   at (a list, comments, notifications) stops while the page is hidden and refreshes once on return.
 
