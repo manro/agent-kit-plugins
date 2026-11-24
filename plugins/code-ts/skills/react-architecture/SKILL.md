@@ -267,11 +267,27 @@ first ready view. [references/web-build.md](references/web-build.md) spells each
   is shared among them, never copied into each and never pulled into the first load; the emitted
   initial and lazy files show where it landed. A hand-made chunk group answers a measurement, never
   a habit, and the emitted files are checked again after it.
+- **Nothing drags a heavy library into the first load.** A page's state (its reducers, effects, or
+  models) registers when the page mounts, never in the global store at startup, where it imports
+  everything the page imports. A component the first views share loads a library only for the case
+  that needs it, after checking what the browser does natively (HLS plays natively in Safari).
+  Analytics, session replay, and chat widgets load once the first view is idle. A workspace package
+  bundled from its `dist/` counts like any library, though no `node_modules` rule catches it.
+- **Code one role uses never ships to everyone.** Admin tools and a role's API entry load behind
+  `import()` inside the role's lazy pages; a package exposes its role-only part as an entry of its
+  own, so its main entry never brings it, and the emitted initial files hold none of it.
 - **A chunk that fails to load after a deploy reloads the page once** per tab session, under a
   session flag, so an outage does not loop; any other load error surfaces.
+- **An open page learns of a new release.** The build writes one release id into the bundle and,
+  from the same value, into `release.json` beside the HTML, revalidated like it. A framework-free
+  watcher, started once at bootstrap with its network, page, and timers behind ports, checks the
+  file on an interval and whenever the page comes back into view, and announces a newer release
+  once. A hidden page then reloads by itself when nothing would be lost (no active leave blocker, no
+  upload in flight); a visible one offers the person a refresh.
 - **Each build is measured** against the budget the repository names, on what the page loads: the
   assets the shell's paint needs, and those the first ready view needs, each counted once and
-  compressed. A trace of a cold and a cached load of the main routes shows when each one paints.
+  compressed. A build over the budget fails, and a trace of a cold and a cached load of the main
+  routes shows when each one paints.
 
 ## Build
 
@@ -286,8 +302,15 @@ rules.
   stylesheet, and media file is named by its content hash, and a public one is cached for good
   (`immutable`); the HTML that names them is revalidated on each visit. A deploy publishes the
   assets before the HTML and keeps earlier releases' assets, across several deploys, while open
-  pages may still ask for them. A file that needs a stable public URL (an icon, a manifest) keeps
-  its name and gets a short cache.
+  pages may still ask for them, under one prefix shared by every release: a prefix per release gives
+  every file a new URL and makes returning visitors download unchanged chunks again. Each emitted
+  file sits in its kind's folder (`scripts/`, `styles/`, `images/`, `fonts/`, `media/`, `wasm/`),
+  asset rules match by type rather than by folder, so a dependency's fonts emit too, and no asset is
+  inlined as a data URL.
+- **Public files keep stable names at the site root.** The favicon set (`favicon.ico`, an SVG icon,
+  `apple-touch-icon.png`, the manifest's icons) and the web manifest live in `public/`, are copied
+  as they are, linked by the page, and get a short cache, since a deploy may replace one under its
+  name. One tool owns each file.
 - **One build serves every deployment**: its constants and runtime settings follow
   `code-architecture` § Inputs and expensive steps, and every deployment serves its assets under the
   base path the build was made for, or the build uses relative asset URLs.
@@ -298,13 +321,41 @@ rules.
   are imported by literal path or a narrow glob, so the build holds only what code names, and a
   module imports what it uses: no global the bundler injects. Images come in the sizes their slots
   show.
-- **Compression is done once and negotiated.** Text assets that gain from it are precompressed (gzip
-  and brotli) at build time or compressed by the edge, and served by the request's
-  `Accept-Encoding`.
+- **An SVG is a file unless it must be a component.** A plain import is a URL for `<img>`, cached
+  and never parsed as script; `?react` makes a component, cleaned by SVGO with its `viewBox` kept,
+  for a small icon that takes `currentColor` or a title. An icon is never lazy on its own: a few
+  kilobytes are not worth a request and a blank Suspense moment, so an icon set chosen by data loads
+  as one module.
+- **Chunks split by default, plus one framework chunk.** React, React DOM, and the scheduler share a
+  chunk that outlives app deploys; everything else follows the bundler's own sharing. No catch-all
+  vendor chunk, no `enforce` beside size settings, and deterministic production ids.
+- **Compression is done once and negotiated.** Text assets above about a kilobyte are precompressed
+  at build time, brotli at quality 11 and gzip at level 9, each kept only when it saves a fifth, and
+  served by the request's `Accept-Encoding`. An object store negotiates nothing: its variants reach
+  a browser only when the edge picks them, or else the CDN compresses within its size limits. A
+  blanket `Cache-Control` set before the static files overrides their long cache.
 - **Source maps stay private.** Production maps are emitted without a link in the served files,
-  uploaded to the error tracker under the release, and left out of what is published.
-- **The bundler only strips types.** Type checking runs as its own step (`tsc --noEmit`, or a
-  checker beside the dev server) and gates the release, so a dev rebuild never waits for it.
+  uploaded to the error tracker under the release, and left out of what is published; a build
+  without maps leaves production errors unreadable. Development maps favour rebuild speed
+  (`eval-cheap-module-source-map`), and the `'unsafe-eval'` they need stays in the development
+  Content Security Policy. The server bundle keeps its map and runs with `--enable-source-maps`.
+- **The bundler only strips types.** An app transpiles with swc or the bundler's own transpiler and
+  emits no declarations; its targets come from the browserslist, never a fixed older target that
+  rewrites `async` and `await` in every module. Type checking runs as its own step (`tsc --noEmit`,
+  or a checker beside the dev server) and gates the release, so a dev rebuild never waits for it.
+- **A library's own runtime files keep their names.** A URL the app hands a library (its Wasm core)
+  is a `?url` import, emitted under a hashed name; files the library loads by its own relative names
+  (a worker and its siblings) ship side by side in `vendor/<package>@<version>/`, cached for good,
+  and the minifier leaves them as the library built them. WebAssembly needs `'wasm-unsafe-eval'` in
+  the Content Security Policy, never `'unsafe-eval'`.
+- **A build config reads as layers.** Its paths come first, each named once as `p<What>` (`pRoot`,
+  `pSrc`, `pDist`) from the config's own folder through one `createPackagePaths`; rules and plugins
+  are factories scoped once (`{ includePathsList }`) and made per mode (`{ isDev }`); a common
+  config holds what targets share, each target is `merge(common, { what differs })`, and a variant
+  merges the target it extends. The file exports every target as an array of named configs that
+  scripts pick by name, the dev server merges the development target in a file of its own, and the
+  config files are TypeScript with a tsconfig of their own. Vite says the same with `mergeConfig`
+  per `--mode`.
 
 ## Mounting
 
@@ -349,9 +400,16 @@ Logic leaves components for hooks, models, and helpers, which suites test per
   `config/`; payloads above the router; one history the guard gates; a guard in `app/router/` that
   only decides; the store copies the route and never navigates; shared page state in the query.
 - Web app: a shell paints before the app's code; the shell entry imports only leaves; pages and
-  heavy libraries load behind `import()`; the first load is measured.
+  heavy libraries load behind `import()`, with no page state registered at startup and no role-only
+  code in the first load; the first load is measured, and a build over budget fails; an open page
+  learns of a new release from `release.json`.
+- Web app build config: `p<What>` paths named first, rule factories scoped once and made per mode,
+  `merge()` layers per target, an exported array of named configs, assets in folders by kind, a
+  public favicon set, and source maps per target.
 - Web app build: one graph per runtime, hashed assets under revalidated HTML, build facts only in
-  constants, CSS per view, private source maps, a separate type check.
+  constants, CSS per view, private source maps, swc with browserslist targets and a separate type
+  check, SVGs as files unless small icons, default chunks plus a framework chunk, and brotli and
+  gzip served by negotiation.
 - Styling uses the repository's system; repeated styles are `ui/` components; theme values are named
   for their role.
 - Every React root mounts through the one function; every control has a label.

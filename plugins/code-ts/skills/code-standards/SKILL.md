@@ -210,7 +210,9 @@ says who acts and on what:
 - **Paths end in `Path`.** A string holding a file or directory path ends in `Path` (`workDirPath`,
   `plainPromptPath`, `REPO_ROOT_PATH`); a bare file name ends in `Name` (`fileName`). A bare `path`
   says too little, and destructuring keeps the suffix: `{ binaryPath }`, never
-  `{ binaryPath: binary }`.
+  `{ binaryPath: binary }`. A bundler config (a `webpack.*`, `vite.*`, `rspack.*`, or `rsbuild.*`
+  file) names its paths `p<What>` instead (`pRoot`, `pSrc`, `pDist`): one short prefix lines up the
+  paths of a long config, and the checker holds those files to it.
 - **Objects carry their role.** A value of a class or role interface ends in that type's role word:
   `progressObserver` holds a `TerminalProgressObserver`, `logger` a `Logger`, `commandLine` a
   `CommandLine`, `zipArchiveRW` a `ZipArchiveRW`.
@@ -593,8 +595,8 @@ class PdfExporter {
 - No public fields; no internal collection handed out mutable; `readonly` fields, a blank line, then
   mutable ones.
 - Collections end in `List`, `Set`, `Map`, or `Cache` after a plural noun; 0-based indexes in `Idx`;
-  paths end in `Path`, objects in their role word, numeric constants in their unit, and no name is a
-  single letter or vague word; no name shadows an outer one.
+  paths end in `Path` (`p<What>` in a bundler config), objects in their role word, numeric constants
+  in their unit, and no name is a single letter or vague word; no name shadows an outer one.
 - A parameter whose value has a source or shape beyond its primitive takes a named type.
 - `type` for data, `interface` only for a class's role; generics appear twice; `?.`/`??` over
   `&&`/`||`; `===` only.
