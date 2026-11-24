@@ -1231,9 +1231,16 @@ export const showShell = (): void => {
   if (node) render(h(pickShell(location.pathname), {}), node);
 };
 
+/** The static error page: the app did not start, or React unmounted it after an uncaught error. */
 export const showStartError = (): void => {
-  const node = document.getElementById(SHELL_ELEMENT_ID);
-  if (node) render(h(StartErrorShell, {}), node);
+  let node = document.getElementById(SHELL_ELEMENT_ID);
+  if (!node) {
+    // The handoff removed the shell; it comes back for the error page alone.
+    node = document.createElement("div");
+    node.id = SHELL_ELEMENT_ID;
+    document.body.append(node);
+  }
+  render(h(StartErrorShell, {}), node);
 };
 
 export const hideShell = (): void => {
@@ -1330,11 +1337,15 @@ piece is memoized by the shell it picks, or every render would mount it again.
 
 ```ts
 // src/index.ts
-import { startLogger } from "#base/start-logger";
-import { showStartError } from "#skeleton/shell";
+import { loadChunk } from "#web/app/load-chunk.ts";
+import { setUpHost } from "#web/app/set-up-host.ts";
+import ConsoleErrorSink from "#web/core/errors/console-error-sink.ts";
+import ErrorReporter from "#web/core/errors/error-reporter.ts";
+import UncaughtErrorListener from "#web/core/errors/uncaught-error-listener.ts";
+import { showStartError } from "#web/skeleton/shell.ts";
 
-import { loadChunk } from "./app/load-chunk";
-import { setUpHost } from "./app/set-up-host";
+/** The app's type root: each module adds its types under it (`code-architecture` § Type root). */
+export namespace Web {}
 
 /** Gives the browser one chance to paint; resolves at once in a hidden tab, which never paints. */
 const waitForPaint = (): Promise<void> =>
@@ -1352,15 +1363,25 @@ const waitForPaint = (): Promise<void> =>
     const frameId = requestAnimationFrame(() => setTimeout(finish));
   });
 
+// Reporting starts first, before anything else can fail.
+const errorReporter = new ErrorReporter({
+  releaseId: __RELEASE_ID__,
+  readPath: () => location.pathname
+});
+
+errorReporter.addSink(new ConsoleErrorSink({ errorOutput: console }));
+new UncaughtErrorListener({ errorReporter, eventTarget: window }).start();
+
+// The app evaluates once the shell has painted, and its modules load after the host is set up.
 const startApp = async (): Promise<void> => {
   await waitForPaint();
   await setUpHost();
-  const { mountApp } = await loadChunk(() => import("./index-app"));
-  mountApp();
+  const { mountApp } = await loadChunk(() => import("#web/app/mount-app.ts"));
+  await mountApp({ errorReporter });
 };
 
 startApp().catch((error: unknown) => {
-  startLogger.error("App start failed", { error });
+  errorReporter.report(error, { source: "start" });
   showStartError();
 });
 ```
@@ -1368,6 +1389,12 @@ startApp().catch((error: unknown) => {
 A frame callback runs before the browser renders and a timer set inside it runs after, so the app
 evaluates once the browser has had its chance to paint the shell; a trace confirms the paint. A tab
 hidden before the frame never renders, so it starts at once. An app with no host drops `setUpHost`.
+
+`index.ts` is the app's one entry, and it holds the type root. Everything that imports React, the
+router, or a service sits behind its one `import()` of the composition root, `app/mount-app.ts`
+([web-router.md § 6](web-router.md#6-the-composition-root)), so a module that reads the host when it
+loads finds it set up. The error reporter starts first, so a failure while starting is reported
+([error-boundaries.md § 11](error-boundaries.md#11-the-entry-and-the-composition-root)).
 
 ```tsx
 // src/app/useShellHandoff.tsx
@@ -1390,7 +1417,7 @@ Every lazy import goes through `loadChunk`, under either bundler.
 ```ts
 // src/app/load-chunk.ts
 const RELOAD_FLAG_KEY = "chunk-reload";
-const MODULE_LOAD_MESSAGE_PREFIXES = [
+const MODULE_LOAD_MESSAGE_PREFIXES_LIST = [
   "Failed to fetch dynamically imported module",
   "error loading dynamically imported module",
   "Importing a module script failed",
@@ -1399,13 +1426,13 @@ const MODULE_LOAD_MESSAGE_PREFIXES = [
 ];
 
 /** A file that failed to arrive, as the browsers word it: a reload can fix it. */
-const isChunkLoadError = (error: unknown): boolean =>
+export const getIsChunkLoadError = (error: unknown): boolean =>
   error instanceof Error &&
   (error.name === "ChunkLoadError" ||
-    MODULE_LOAD_MESSAGE_PREFIXES.some(prefix => error.message.startsWith(prefix)));
+    MODULE_LOAD_MESSAGE_PREFIXES_LIST.some(prefix => error.message.startsWith(prefix)));
 
 /** True the first time this tab asks; false after that, or when storage is unavailable. */
-const markReloadOnce = (): boolean => {
+const claimReload = (): boolean => {
   try {
     if (sessionStorage.getItem(RELOAD_FLAG_KEY)) return false;
     sessionStorage.setItem(RELOAD_FLAG_KEY, "1");
@@ -1418,7 +1445,8 @@ const markReloadOnce = (): boolean => {
 /** Loads a chunk; when its file is gone, as after a deploy, reloads the page once per tab. */
 export function loadChunk<T>(load: () => Promise<T>): Promise<T> {
   return load().catch((error: unknown) => {
-    if (!isChunkLoadError(error) || !markReloadOnce()) throw error;
+    // Offline, a reload shows the browser's own error page; the error boundary says why instead.
+    if (!getIsChunkLoadError(error) || !navigator.onLine || !claimReload()) throw error;
     location.reload();
     return new Promise<T>(() => {});
   });
@@ -1440,7 +1468,11 @@ const SettingsPage = lazy(() =>
   a heuristic, so a test per target browser checks the messages; a wrong match costs one reload,
   since the flag holds for the tab.
 - The flag stays for the tab session, so a chunk that stays broken reloads once, not on every visit,
-  and the pending promise keeps the fallback up while the page reloads.
+  and the pending promise keeps the fallback up while the page reloads. After that reload, the error
+  reaches the page's boundary, whose fallback offers another
+  ([error-boundaries.md](error-boundaries.md)).
+- Offline, nothing reloads: a reload would show the browser's own error page and spend the flag, so
+  the error goes to the boundary, whose fallback says to reconnect.
 - Nothing calls `preventDefault()` on Vite's `vite:preloadError`: that turns the failed import into
   one that resolves to `undefined`.
 
@@ -1844,7 +1876,7 @@ NewReleaseBanner.displayName = "NewReleaseBanner";
 ```
 
 ```tsx
-// src/index.tsx, the composition root
+// src/app/mount-app.ts, the composition root
 // The composition root starts the watcher once, outside React; development has no release.
 const releaseWatcher = new ReleaseWatcher(
   {
@@ -2056,7 +2088,7 @@ AdminTools.displayName = "AdminTools";
 ```
 
 ```tsx
-// src/index.tsx
+// src/app/router/lazy-pages.tsx
 const AdminTools = lazy(() =>
   import("#web/app/admin/AdminTools.tsx").then(module => ({ default: module.AdminTools }))
 );
@@ -2146,6 +2178,11 @@ webpack, which otherwise drops the type, or `worker.format: "es"` in Vite. A wor
   out `identity`, which gets a 406.
 - The release step uploads the hidden source maps to the error tracker under the release id, then
   publishes from an allowlist that leaves maps out.
+- **Assets on another origin load with CORS.** A script from another origin than the page, such as a
+  CDN host, loads with `crossorigin` and is answered with `Access-Control-Allow-Origin`; without
+  both, its errors reach the page as `Script error.`, with no message or stack. Vite adds the
+  attribute to its tags; under webpack, `output.crossOriginLoading: "anonymous"` covers the chunks
+  it loads, and the page template's own tags carry the attribute.
 
 ### Compression
 

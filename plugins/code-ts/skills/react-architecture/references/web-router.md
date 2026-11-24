@@ -62,7 +62,7 @@ src/
     lazy-pages.tsx                   every page behind import()
     layouts/                         layout routes: a frame around an Outlet
     AppRoutes.tsx                    the route table
-  index-app.ts                       the composition root: builds, connects, starts, mounts
+  app/mount-app.ts                   the composition root: builds, connects, starts, mounts
 ```
 
 `config/` holds the list because both `core/router/` (types and matching) and `app/router/` (the
@@ -751,48 +751,111 @@ export default { buildRouteGuard };
 ## 6. The composition root
 
 ```ts
-// index-app.ts
+// app/mount-app.ts
 import { createBrowserHistory } from "history";
-import { createElement } from "react";
-import { createRoot } from "react-dom/client";
+import { createElement, StrictMode } from "react";
 
 import { App } from "#web/app/App.tsx";
+import { createAppRoot } from "#web/app/create-app-root.ts";
+import RootElementMissingError from "#web/app/root-element-missing.error.ts";
 import routeGuard from "#web/app/router/route-guard.ts";
+import { startErrorTracker } from "#web/app/start-error-tracker.ts";
+import IntervalScheduler from "#web/base/interval-scheduler.adapter.ts";
+import type ErrorReporter from "#web/core/errors/error-reporter.ts";
+import HttpClient from "#web/core/http/http-client.ts";
+import BrowserPageHost from "#web/core/release/browser-page-host.adapter.ts";
+import ReleaseFileSource from "#web/core/release/release-file-source.adapter.ts";
+import ReleaseWatcher from "#web/core/release/release-watcher.ts";
 import routeStore from "#web/core/route-store/route-store.ts";
 import RouterHistory from "#web/core/router/router-history.ts";
 import SessionService from "#web/core/session/session-service.ts";
 
-// The composition root: the order is the contract.
-const routerHistory = new RouterHistory({ baseHistory: createBrowserHistory() });
-const sessionService = new SessionService();
+const API_BASE_URL = "/api";
 
-// 1. The store's copy follows the history from the first accepted location.
-routerHistory.addEventListener("changed", routeState => routeStore.setRouteState(routeState));
+type Deps = Readonly<{ errorReporter: ErrorReporter }>;
 
-// 2. The session must be known before anything can be guarded.
-await sessionService.start();
-
-// 3. The guard checks the location the app opened on; no route has rendered yet.
-routerHistory.registerGuard(
-  routeGuard.buildRouteGuard({ readSession: () => sessionService.readSnapshot() })
-);
-
-// 4. A change of who is signed in, or of what they may open, checks the current page again.
-sessionService.addEventListener("changed", () => routerHistory.recheckLocation());
-
-// 5. Only now do routes render; until here the page shows the first-load shell.
-const rootElement = document.getElementById("root");
-
-if (rootElement !== null) {
-  createRoot(rootElement).render(
-    createElement(App, { routerHistory, isAdmin: sessionService.readSnapshot().isAdmin })
+/**
+ * The composition root: it builds the app's services, connects and starts them in order, and
+ * mounts the app. The entry loads it once the shell has painted; the order is the contract.
+ */
+export const mountApp = async ({ errorReporter }: Deps): Promise<void> => {
+  const routerHistory = new RouterHistory({ baseHistory: createBrowserHistory() });
+  const sessionService = new SessionService();
+  const httpClient = new HttpClient({
+    baseUrl: API_BASE_URL,
+    errorReporter,
+    fetchResponse: fetch.bind(window)
+  });
+  const releaseWatcher = new ReleaseWatcher(
+    {
+      releaseSource: ReleaseFileSource.open(),
+      pageHost: BrowserPageHost.open(),
+      scheduler: new IntervalScheduler(),
+      // The app's own answer goes here: false while a leave blocker is active or an upload runs.
+      getIsReloadSafe: () => true
+    },
+    { currentReleaseId: __RELEASE_ID__ }
   );
-}
+
+  // 1. The store's copy follows the history from the first accepted location.
+  routerHistory.addEventListener("changed", routeState => routeStore.setRouteState(routeState));
+
+  // 2. The session must be known before anything can be guarded.
+  await sessionService.start();
+
+  // 3. The guard checks the location the app opened on; no route has rendered yet.
+  routerHistory.registerGuard(
+    routeGuard.buildRouteGuard({ readSession: () => sessionService.readSnapshot() })
+  );
+
+  // 4. A change of who is signed in, or of what they may open, checks the current page again.
+  sessionService.addEventListener("changed", () => routerHistory.recheckLocation());
+
+  // 5. The watcher learns of newer releases; development has none.
+  if (__RELEASE_ID__ !== "development") {
+    releaseWatcher.start();
+  }
+
+  // 6. Only now do routes render; until here the page shows the first-load shell.
+  const rootElement = document.getElementById("root");
+
+  if (rootElement === null) {
+    throw new RootElementMissingError("The page has no #root element");
+  }
+
+  // Signing out clears the session, and a full load leaves no state of the failed app behind.
+  const signOutAndReload = (): void => {
+    void sessionService.signOut().finally(() => location.assign("/"));
+  };
+
+  createAppRoot(rootElement, errorReporter).render(
+    createElement(
+      StrictMode,
+      null,
+      createElement(App, {
+        errorReporter,
+        httpClient,
+        releaseWatcher,
+        routerHistory,
+        isAdmin: sessionService.readSnapshot().isAdmin,
+        onSignOut: signOutAndReload
+      })
+    )
+  );
+
+  // 7. The tracker loads once the first view is idle, and receives what was reported until then.
+  startErrorTracker(errorReporter);
+};
 ```
 
 - The order is the contract: the copy subscribes before the first state is published; the guard
   needs the session; routes render only after the guard checked the opening location, and the
   first-load shell ([§ First load](../SKILL.md#first-load)) covers the wait.
+- **The app's one entry, `index.ts`, loads this module through `import()`** once the shell has
+  painted, and hands it the error reporter it started first
+  ([error-boundaries.md § 11](error-boundaries.md#11-the-entry-and-the-composition-root)). The same
+  root builds the API client and the release watcher, creates the React root with its error options,
+  and passes the services to `App`, which provides them to the hooks.
 - **What the guard reads changes, the current page is checked again**: sign-in, sign-out, a role or
   a membership change. The session publishes those changes; the root connects them to
   `recheckLocation`, so a person who loses access is moved off the page.

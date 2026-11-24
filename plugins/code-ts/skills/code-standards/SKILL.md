@@ -246,8 +246,9 @@ says who acts and on what:
   `getJobsList(…)`, `get #packageKindsList()` without parameters, `readEntryNamesList(…)` when it
   reads files — never `list…`, which repeats the kind as a verb. A noun (`ownLines`, `letters`,
   `attrsOf`) or an adjective (`claimed`) hides whether it reads or acts. A unit conversion reads
-  `<from>To<to>` (`ptToEmu`); log-level methods (`warn`, `error`) and `main` keep their names. The
-  checker holds the verb set, only verbs the code uses, and fails any other first word.
+  `<from>To<to>` (`ptToEmu`); log-level methods (`warn`, `error`) and `main` keep their names, and
+  so does an `override` method, named by its base class. The checker holds the verb set, only verbs
+  the code uses, and fails any other first word.
 - **Files and folders are kebab-case.** The barrel key spells the stem in camelCase, with a capital
   first letter for a class: `log-progress-observer.ts` holds `LogProgressObserver`,
   `note-timing-parser.ts` is keyed `noteTimingParser`. An acronym is one lowercase word in the file
@@ -323,7 +324,8 @@ rule of the repository's own or review.
   delegating to it.
 - `implements` is the polymorphism mechanism. Interfaces stay small — one role each.
 - Three exceptions: `extends Error` for typed errors, `extends EventerBase<Listeners>` for a class
-  that publishes events ([§ Events](#events)), and a base class a framework requires.
+  that publishes events ([§ Events](#events)), and a base class a framework requires, such as a UI
+  framework's component class where the framework accepts only a class.
 - No `abstract` classes and no `protected` members outside the event library; both exist only to
   serve inheritance. Mixins are inheritance too.
 - Inheritance-based patterns take their composition form: Template Method becomes an injected
@@ -353,8 +355,9 @@ A class that announces what happens to it publishes events; it never takes a not
 - **A component's props follow its framework's convention**: an `on…` prop stays a prop, and the
   component is named for what it renders; the checker takes a PascalCase function in a `.tsx` file
   for a component.
-- The checker fails on a parameter named `on…` with a function type, on `extends` other than `Error`
-  or `EventerBase`, and on `abstract` or `protected` outside the event library.
+- The checker fails on a parameter named `on…` with a function type, on `extends` other than
+  `Error`, `EventerBase`, or a UI framework's component class in a `.tsx` file, and on `abstract` or
+  `protected` outside the event library.
 
 ## GoF patterns
 

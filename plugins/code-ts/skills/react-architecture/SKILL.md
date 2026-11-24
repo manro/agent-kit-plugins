@@ -89,16 +89,18 @@ src/
   core/<concept>/         one domain: its endpoints, service, model, and types
   core/http/              shared mechanics are concepts too: the HTTP client,
   core/router/            the typed router,
+  core/errors/            error reporting,
   core/overlay/           and the dialog host
   app/
+    mount-app.ts          the composition root: builds, starts, and mounts
     App.tsx               the providers
     router/               the route table, its lazy pages, and the guard
     pages/<page>/         <Name>Page.tsx, sections/, hooks/, and the model the page owns
     comp/ui/              building blocks: Button, Field, Dialog
     comp/<feature>/       a component two pages use
   skeleton/               the first-load shell (§ First load)
-  index.ts                the bootstrap entry
-  index-app.ts            the app entry: mounts App
+  index.ts                the one entry: error reporting, the shell's paint, then
+                          app/mount-app.ts behind import(); also the type root
 ```
 
 - **Imports point down**: `app/` → `core/` → `base/` and `config/`. A concept never imports `app/`:
@@ -237,6 +239,44 @@ and hold an existing one to it.
   `onClose(result)`) and gets focus trapping and keyboard handling from the shared dialog; its
   caller owns whether it is open and what the result means.
 
+## Errors
+
+For both app kinds; a desktop renderer's reports go to its host process through its client, and it
+has no chunks to reload. [references/error-boundaries.md](references/error-boundaries.md) is the
+full path, every module typechecked over React 19 and covered by its suites: build an app's error
+handling from it, and hold an existing one to it.
+
+- **Every error reaches one reporter, once.** The React root reports what React sees
+  (`onCaughtError`, `onUncaughtError`, `onRecoverableError`); one window listener reports what it
+  never sees (`error` from handlers and timers, `unhandledrejection`); the API client every request
+  goes through reports a 5xx and a network failure while online; a hook that shows a failure itself
+  reports it through the reporter's context. The reporter drops an error already sent, a
+  cancellation, and known noise, caps a repeating message, and starts first in the app's one entry.
+  The error tracker attaches once the first view is idle, with its own global handlers off, and
+  receives what it missed.
+- **Boundaries go by layer.** The app's sits under the theme and above the store and the router. A
+  page's sits in its layout around the Suspense boundary, keyed by the location, so the navigation
+  stays and moving on clears it. A part that fails on its own (a player, an editor, a chart) gets
+  one keyed by its input. Small parts get none.
+- **A boundary only renders its fallback**, and the root reports what it caught, so none reports
+  twice or forgets to. It is the app's one class component, since React catches only in a class.
+- **A fallback uses nothing that may have failed** (no store, router, or request) and says what the
+  person can do: reconnect when offline, reload when a deploy replaced a chunk or a newer release is
+  out, and otherwise try again, which mounts the part anew with a fresh model. A failed lazy import
+  is retried only by a reload, since `lazy()` keeps its failure. The app's fallback reloads and
+  offers sign-out; the error itself shows only in a development build.
+- **A failure outside render goes where the person sees it.** One the view cannot survive, such as
+  the data a page shows nothing without, reaches the nearest boundary through state, since a throw
+  from a callback reaches the window instead; any other is the hook's or model's error state, shown
+  where it happened. No `catch` is empty.
+- **A report says where to look**: the release id, the page's path without its query, where the
+  error was seen, the boundary's name, and the component stack, which the release's hidden source
+  maps turn into source lines.
+- **The shell is the last line.** An error no boundary caught unmounts the app, and the shell's
+  static error page shows in its place.
+- **Scripts from another origin load with CORS** (`crossorigin`), or their errors reach the page as
+  `Script error.`, with no message or stack.
+
 ## First load
 
 A web app downloads before it runs, so its first paint must not wait for its code. It loads in
@@ -260,8 +300,8 @@ first ready view. [references/web-build.md](references/web-build.md) spells each
 - **The app reuses the shell's pieces** as its Suspense fallbacks, through one bridge hook that
   renders them into a ref and unmounts them on cleanup. With the same CSS, the shell, the fallback,
   and the page line up without a jump.
-- **The bootstrap entry imports the app after host setup** (`await import("./index-app")`), since a
-  module that reads host state when it loads must load after the host is set up.
+- **The bootstrap entry imports the app after host setup** (`await import("./app/mount-app")`),
+  since a module that reads host state when it loads must load after the host is set up.
 - **Code arrives with its page.** Each page loads behind `import()`, and so does a heavy library
   (charts, drag and drop, QR codes), through a hook (`useLazyQrCode`). Code that only lazy pages use
   is shared among them, never copied into each and never pulled into the first load; the emitted
@@ -277,7 +317,8 @@ first ready view. [references/web-build.md](references/web-build.md) spells each
   `import()` inside the role's lazy pages; a package exposes its role-only part as an entry of its
   own, so its main entry never brings it, and the emitted initial files hold none of it.
 - **A chunk that fails to load after a deploy reloads the page once** per tab session, under a
-  session flag, so an outage does not loop; any other load error surfaces.
+  session flag, so an outage does not loop; offline, or after that reload, the error reaches the
+  page's boundary, and any other load error surfaces.
 - **An open page learns of a new release.** The build writes one release id into the bundle and,
   from the same value, into `release.json` beside the HTML, revalidated like it. A framework-free
   watcher, started once at bootstrap with its network, page, and timers behind ports, checks the
@@ -399,6 +440,11 @@ Logic leaves components for hooks, models, and helpers, which suites test per
 - Web app router, per [references/web-router.md](references/web-router.md): one route list in
   `config/`; payloads above the router; one history the guard gates; a guard in `app/router/` that
   only decides; the store copies the route and never navigates; shared page state in the query.
+- Errors, per [references/error-boundaries.md](references/error-boundaries.md): one reporter started
+  first in the one entry, the root's error options, one window listener, and an API client that
+  reports; boundaries at the app, page, and widget layers that only render fallbacks; fallbacks by
+  kind, the newer release included, that use nothing that failed; failures outside render handed
+  over through state, or shown and reported where they happened.
 - Web app: a shell paints before the app's code; the shell entry imports only leaves; pages and
   heavy libraries load behind `import()`, with no page state registered at startup and no role-only
   code in the first load; the first load is measured, and a build over budget fails; an open page
