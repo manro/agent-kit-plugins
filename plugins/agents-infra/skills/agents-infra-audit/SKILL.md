@@ -23,7 +23,8 @@ the user asks to audit or check the agent setup.
 
 Read these from the repository before running; each is a flag.
 
-- **The skill router**, if any: the file that lists every skill, named in `AGENTS.md`.
+- **The skill router**, if any: the file that lists every skill, under whatever name `AGENTS.md`
+  gives it (`.agents/SKILL-ROUTER.md`, `.agents/SKILL-REGISTRY.md`). None means no `--router`.
 - **Always-loaded docs** beyond `AGENTS.md` and `CLAUDE.md`: what `AGENTS.md` says every task loads.
 - **The Markdown line limit**: what `AGENTS.md` states, else `.editorconfig` `max_line_length` for
   `[*]` or `[*.md]`; none means no `--line-limit`.
@@ -35,7 +36,7 @@ Read these from the repository before running; each is a flag.
 From the repository root, with Node 22 or later:
 
 ```bash
-node <this skill's folder>/scripts/dist/agents-infra-audit.run.mjs --plain --router .agents/SKILL-ROUTER.md
+node <this skill's folder>/scripts/dist/agents-infra-audit.run.mjs --plain [--router <router file>]
 ```
 
 | Flag                 | Default          | Meaning                                               |
@@ -43,7 +44,7 @@ node <this skill's folder>/scripts/dist/agents-infra-audit.run.mjs --plain --rou
 | `--root`             | `.`              | Repository root                                       |
 | `--agents-dir`       | `.agents`        | Agent docs, with skills in its `skills/`              |
 | `--links-dir`        | `.claude/skills` | Claude Code skill links                               |
-| `--router`           | none             | Skill router; without it the router check is skipped  |
+| `--router`           | none             | Skill router file; without it the router check skips  |
 | `--always-loaded`    | none             | One more always-loaded doc for the budget; repeatable |
 | `--line-limit`       | none             | Markdown line limit; without it no line is too long   |
 | `--mcp-template`     | the usual three  | A template to compare; repeatable                     |
@@ -67,6 +68,7 @@ Every check is a failure unless the table says otherwise. The audited Markdown i
 | Skill folder names are unique                                                              | —                    |
 | The router lists each skill by name or namespaced path in backticks, or a local skill link | no `--router`        |
 | Each link in the links folder resolves to the skill of its name; no real folder shadows    | —                    |
+| A link named like no skill holds a skill folder outside the skills folder (it stays)       | —                    |
 | A skill with no link in an existing links folder (warning)                                 | —                    |
 | A house `SKILL.md` names no date, ADR record, or month and year; vendored skills skip      | `--no-skill-history` |
 | No Markdown line runs past the limit where it could wrap                                   | no `--line-limit`    |
@@ -88,27 +90,8 @@ Tokens are words times 4/3.
    it introduced remains. List pre-existing findings separately. Require an overall `PASS` when the
    task authorizes fixing all findings. Mention a large increase in always-loaded tokens.
 
-| Exit | Meaning                                       |
-| ---- | --------------------------------------------- |
-| 0    | `PASS`: no failures; warnings may remain      |
-| 1    | Bad arguments, no agents folder, or no router |
-| 2    | `FAIL`: at least one failure is left to fix   |
-
-## Scripts
-
-`scripts/` is a package, `@manro/agent-kit-skill-agents-infra-audit`, laid out like an app
-(`code-architecture` § Package anatomy) and run by plain Node. Paths below are under `src/`.
-
-| Path                              | Holds                                                  |
-| --------------------------------- | ------------------------------------------------------ |
-| `agents-infra-audit.run.ts`       | The entry: runs `AuditCommand`                         |
-| `cli/commands/audit.command.ts`   | Parses the flags, picks the present MCP templates      |
-| `cli/audit-report-formatter.ts`   | The report as lines                                    |
-| `base/fs-repo-reader.adapter.ts`  | Files, folders, and resolved links on disk             |
-| `base/git-head-reader.adapter.ts` | Changed files and their text at `HEAD`                 |
-| `core/check/`                     | References, skills, links, line limit, MCP templates   |
-| `core/budget/token-budget.ts`     | Word and token counts                                  |
-| `core/composer/infra-auditor.ts`  | `InfraAuditor`: runs every check and builds the report |
-
-Markdown scanning and frontmatter come from `@manro/lib-markdown`; skill discovery and duplicate
-names from `@manro/lib-agent-skills`.
+| Exit | Meaning                                                   |
+| ---- | --------------------------------------------------------- |
+| 0    | `PASS`: no failures; warnings may remain                  |
+| 1    | Bad arguments, no agents folder, or no file at `--router` |
+| 2    | `FAIL`: at least one failure is left to fix               |

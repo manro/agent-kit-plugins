@@ -1,0 +1,16 @@
+{
+  "name": "@manro/lib-log",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:clear": "rm -rf dist",
+    "test": "node --disable-warning=ExperimentalWarning --test 'test/**/*.test.ts'",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test"
+  },
+  "imports": {
+    "#log/*": "./src/*"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

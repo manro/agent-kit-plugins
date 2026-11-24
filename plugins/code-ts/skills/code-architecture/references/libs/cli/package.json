@@ -1,0 +1,25 @@
+{
+  "name": "@manro/lib-cli",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:clear": "rm -rf dist",
+    "test": "node --disable-warning=ExperimentalWarning --test 'test/**/*.test.ts'",
+    "typecheck": "tsc --noEmit"
+  },
+  "imports": {
+    "#cli/*": "./src/*"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@inquirer/select": "^5.2.8",
+    "@manro/lib-env": "workspace:*",
+    "@manro/lib-log": "workspace:*",
+    "@manro/lib-log-server": "workspace:*",
+    "chalk": "^6.0.1",
+    "commander": "^15.1.0",
+    "ora": "^10.0.0"
+  }
+}

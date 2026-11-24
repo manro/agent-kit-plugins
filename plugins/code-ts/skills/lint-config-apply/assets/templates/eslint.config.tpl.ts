@@ -13,8 +13,8 @@ import { SHARED_RULES_MAP, SHARED_TYPE_AWARE_RULES_MAP } from "./lint-rules.tpl.
 
 const TS_RULE_PREFIX = "@typescript-eslint/";
 
-/** An import of `layers` through the package's `#<folder>/` alias or a `../` path. */
-const getLayerBan = (layersList: readonly string[], message: string) => ({
+/** An import of `layersList` through the package's `#<folder>/` alias or a `../` path. */
+const buildLayerBan = (layersList: readonly string[], message: string) => ({
   regex: `^(#[^/]+/|(\\.\\./)+)(${layersList.join("|")})/`,
   message
 });
@@ -24,7 +24,7 @@ const LAYER_BLOCKS_LIST = [
   {
     filesList: ["**/src/base/**", "**/src/config/**"],
     exceptFilesList: [],
-    ban: getLayerBan(
+    ban: buildLayerBan(
       ["core", "cli"],
       "base/ and config/ know no concept: import nothing from core/ or cli/."
     )
@@ -32,7 +32,7 @@ const LAYER_BLOCKS_LIST = [
   {
     filesList: ["**/src/core/**"],
     exceptFilesList: ["**/src/core/composer/**"],
-    ban: getLayerBan(
+    ban: buildLayerBan(
       ["core/composer", "composer", "cli"],
       "A concept never imports the wiring above it: nothing from core/composer/ or cli/."
     )
@@ -40,7 +40,7 @@ const LAYER_BLOCKS_LIST = [
   {
     filesList: ["**/src/core/composer/**"],
     exceptFilesList: [],
-    ban: getLayerBan(
+    ban: buildLayerBan(
       ["cli"],
       "core/composer/ wires the core; the entry layer in cli/ imports it, not the reverse."
     )
@@ -88,7 +88,7 @@ export const readPackageFoldersList = (dirUrl: URL): string[] =>
     .map(entry => entry.name)
     .sort();
 
-const findRule = (ruleName: string): Rule.RuleModule => {
+const getRule = (ruleName: string): Rule.RuleModule => {
   const rule = ruleName.startsWith(TS_RULE_PREFIX)
     ? (tseslint.plugin as ESLint.Plugin).rules?.[ruleName.slice(TS_RULE_PREFIX.length)]
     : builtinRules.get(ruleName);
@@ -108,6 +108,6 @@ export const buildRuleCopiesPlugin = (
   copiesMap: Readonly<Record<string, string>>
 ): ESLint.Plugin => ({
   rules: Object.fromEntries(
-    Object.entries(copiesMap).map(([copyName, ruleName]) => [copyName, findRule(ruleName)])
+    Object.entries(copiesMap).map(([copyName, ruleName]) => [copyName, getRule(ruleName)])
   )
 });

@@ -61,8 +61,8 @@ mechanics while each keeps its own rules:
 
 - `readIgnoreGlobsList(url)`: the globs of an ignore file, one per line, `#` comments skipped. A
   repository keeps them in `eslint.ignore` (ESLint 9 warns while a `.eslintignore` exists).
-- `readPackageFoldersList(url)`: the folders under `src/apps/` or `src/libs/` that hold a
-  `package.json`, so per-package blocks need no list to maintain.
+- `readPackageFoldersList(url)`: the folders under a folder of packages (`src/apps/`, `packages/`)
+  that hold a `package.json`, so per-package blocks need no list to maintain.
 - `buildRuleCopiesPlugin({ copy: rule })`: a plugin of existing rules (core or
   `@typescript-eslint/`) under new names. A block that sets a rule replaces its whole option list,
   so a concern on its own copy (`<ns>/barrel-syntax`) never restates the options of another block.
@@ -90,34 +90,6 @@ recorded base: every difference is a conflict.
 
 A conflict without a choice writes neither config and exits 3. A person at a terminal is asked for
 those choices instead; an agent always passes `--plain`, so it never is. `--help` lists the flags.
-
-`scripts/` is a package, `@manro/agent-kit-skill-lint-config-apply`, laid out like an app
-(`code-architecture` § Package anatomy) and run by plain Node 22.18: code in `src/`, suites in
-`test/`. Its `package.json` maps `#lint-config-apply/*` to `./src/*`; `src/index.ts` holds the type
-root `LintConfigApply`, which each module's `declare module` block extends; `src/app.ts` is the
-private barrel `LINT_CONFIG_APPLY`, nested like the folders; `test/` mirrors `src/`. Paths below are
-under `src/`.
-
-| Path                         | Holds                                                                  |
-| ---------------------------- | ---------------------------------------------------------------------- |
-| `lint-config-apply.run.ts`   | The entry: runs `ApplyCommand` and prints its report                   |
-| `lint-history-record.run.ts` | agent-kit's maintainer entry: runs `RecordCommand`                     |
-| `cli/`                       | Typed report renderers, shared by plain and terminal output            |
-| `cli/commands/`              | `apply.command.ts`, `record.command.ts`: parse flags, wire, run        |
-| `config/`                    | `config-kinds.config.ts`: each kind's template, scaffold, file, syntax |
-| `base/`                      | The roles several concepts share, the checkout and Prettier adapters   |
-| `core/region/`               | Codec, renderer, file writer, history recorder, and their adapters     |
-| `core/merge/`                | `ThreeWayLineMerger`, `HunkChoicePolicy`                               |
-| `core/target/`               | `ConfigTargetFinder`, `LintPackagesChecker`                            |
-| `core/composer/`             | `TargetPlanner` and `LintConfigApplier`, the apply workflow            |
-| `test/`                      | node:test suites mirroring the folders, and the `barrelLoad` guard     |
-
-Each command is its pipeline's one wiring point: it reads the classes from the barrel, creates the
-adapters, the config, the codec, and every domain object, and hands each its collaborators through
-the constructor. Core returns typed report data; commands render and print it. Below `cli/`, a
-module imports other modules' types from the type root and nothing else, apart from the error it
-throws. Short-lived working objects stay private to the class that needs them (`TemplateCollector`,
-`MergeWalk`).
 
 ## Workflow
 
@@ -158,11 +130,6 @@ throws. Short-lived working objects stay private to the class that needs them (`
   edit inside the region is kept, but every agent-kit change to the same line becomes a question. A
   rule that should apply everywhere belongs in `assets/templates/lint-rules.tpl.ts` (or
   `lint-shared.tpl.ts` for a value both tools use), released through agent-kit.
-- In agent-kit, run this skill's `lint-history-record.run.ts` entry from its sources after a
-  template change and commit the history file with it; `validate.sh` fails until the new rendering
-  is recorded. A source checkout's plugin manifest names no version, so a run from the sources
-  passes `--plugin-version` with the version in agent-kit's `package.json`; an installed plugin's
-  manifest carries it.
 - Follow the repository's module format: `.js` files when `package.json` has `"type": "module"`,
   `.mjs` otherwise; the legacy ESLint config is CommonJS (`.eslintrc.cjs`).
 - Requires Node 22.18 or later, which strips the templates' types for a JavaScript region.

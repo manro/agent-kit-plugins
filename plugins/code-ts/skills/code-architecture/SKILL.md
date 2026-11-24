@@ -2,34 +2,61 @@
 name: code-architecture
 description: >-
   Architecture standard for TypeScript apps, libraries, and skill scripts: package boundaries,
-  layers, composition roots, state, and validation. Use when creating, moving, or reviewing packages
-  or skill scripts, or adding dependencies.
+  layers, composition roots, state, cancellation, workers, and validation. Use when creating,
+  moving, or reviewing packages or skill scripts, or adding dependencies.
 ---
 
 # Code Architecture
 
 How TypeScript packages and skill scripts are built. The consuming repository names its scope, its
-libs, and its checks in its own wrapper skill or AGENTS.md. Examples use `report-builder` (`RB` /
-`Rb`) and `@<scope>/lib-zip` (`ZIP` / `Zip`).
+libs ([§ Lib roles](#lib-roles)), and its checks in its own wrapper skill or AGENTS.md. Examples use
+`report-builder` (`RB` / `Rb`) and `@<scope>/lib-zip` (`ZIP` / `Zip`).
 
 **The consuming repository owns its layout and toolchain.** Read its wrapper skill or `AGENTS.md`,
 then check the existing packages and CI for package names, workspace layout, package manager,
-TypeScript runtime, and launch commands. Preserve those choices in an existing project. Use the
-package layout and pnpm/tsx commands below as defaults where the project has no established choice.
-Ask when a real conflict would change existing package boundaries or entry points. `code-standards`
-decides the shape of code inside a module; this skill decides where code lives, which package owns
-it, and how packages connect.
+TypeScript runtime, and launch commands. Preserve those choices in an existing project, and read
+each rule through the repository's shape ([§ Repository shapes](#repository-shapes)). Use the
+package layout below as the default where the project has no established choice. Its rules hold
+under any package manager; its commands are spelled for pnpm and tsx, and a repository on npm, Yarn,
+or Bun runs the same scripts through its own manager. Ask when a real conflict would change existing
+package boundaries or entry points. `code-standards` decides the shape of code inside a module; this
+skill decides where code lives, which package owns it, and how packages connect.
 
 ## When to use
 
-**MUST** apply when creating, moving, renaming, or splitting a module, folder, or package under
-`src/apps/`, `src/libs/`, or a skill's `scripts/`; adding or moving a dependency; deciding whether
-code belongs in a skill script, an app, or a lib; and reviewing any change in those locations.
+**MUST** apply when creating, moving, renaming, or splitting a module, folder, or package of the
+repository (in the default layout, under `src/apps/` or `src/libs/`) or of a skill's `scripts/`;
+adding or moving a dependency; deciding whether code belongs in a skill script, an app, or a lib;
+and reviewing any change in those locations.
 
 ## Scope
 
-- `src/apps/**`, `src/libs/**`, and the code and tests owned by a skill's `scripts/`
-- The workspace manifest, environment tsconfig bases, and the lint config's `src/**` overrides
+- Each package's code and tests: `src/apps/**` and `src/libs/**` in the default layout, the
+  repository's own package folders, or the root `src/` of a single-package repository
+- The code and tests owned by a skill's `scripts/`
+- The workspace manifest, environment tsconfig bases, and the lint config's package overrides
+
+## Repository shapes
+
+The rules spell paths in the default layout. Read them through the shape the repository already has:
+
+| Shape                                                                 | App                                                                                    | Lib, or a role lib                                                                    | Not used                                                                                                                       |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| One package at the root (`package.json`, `src/`, `test/`)             | The root package, its `src/` per the app rows of [§ Package anatomy](#package-anatomy) | A folder of its base layer (`src/base/log/`), reached through the package's own alias | `src/apps/`, `src/libs/`, the workspace list, the root fan-out, `bin/run.sh`, and `app:<folder>`: root scripts run the entries |
+| A workspace in the default layout                                     | `src/apps/<app>/`                                                                      | `src/libs/<lib>/`                                                                     | —                                                                                                                              |
+| A workspace in its own layout (`apps/` and `packages/`, `packages/*`) | Its app folder                                                                         | Its library folder                                                                    | The default folder names and the `lib-` and `app-` name prefixes                                                               |
+
+- **The shape stands.** New code follows the repository's shape; a single-package repository gets no
+  `src/apps/`, `src/libs/`, or workspace to fit these rules. When a change needs a second package (a
+  second app, a lib two packages share), propose the split to the user before making it.
+- **An existing package keeps its name.** A package, folder, or module the repository already has
+  keeps its name, place, and exports, even where it breaks the default prefixes or fills a role
+  under its own names ([§ Lib roles](#lib-roles)). The naming rules here and in `code-standards`
+  name new code; renaming existing code is a migration the user asks for, never a side effect of
+  another change.
+- **The rules inside a package hold in every shape**: layers, barrels, role suffixes, and tests.
+  Where an existing package settled one of them its own way, follow the package and name the
+  difference in the review instead of converting it.
 
 ## Where code lives
 
@@ -40,6 +67,8 @@ code belongs in a skill script, an app, or a lib; and reviewing any change in th
 | Tooling owned and run by one skill                                      | The skill's `scripts/`    |
 | An engine with an independent workflow or an input contract to document | An app, `src/apps/<app>/` |
 | Code two packages use                                                   | A lib, `src/libs/<lib>/`  |
+
+The homes name the default layout; [§ Repository shapes](#repository-shapes) maps them to others.
 
 - **One home per domain.** A domain is one area of knowledge the code relies on: an operating
   system, an external service, a file format, a tool, a workflow. Everything that belongs to it —
@@ -72,9 +101,12 @@ code belongs in a skill script, an app, or a lib; and reviewing any change in th
 
 A one-file helper can stay directly in the skill's `scripts/`. For a skill-owned package, use
 `scripts/package.json` as the package boundary, `scripts/src/` for implementation, and
-`scripts/test/` for suites that mirror it. Keep the manifest, source, and tests inside the same
-package so local imports resolve in each. Preserve an existing package boundary when splitting
-modules or moving tests, unless the task or repository's conventions call for changing it.
+`scripts/test/` for suites that mirror it, and `scripts/README.md` per
+[§ README contract](#readme-contract). Keep the manifest, source, and tests inside the same package
+so local imports resolve in each. `SKILL.md` tells the agent how to run the scripts; the README
+tells the people who change them how they work, and neither restates the other. Preserve an existing
+package boundary when splitting modules or moving tests, unless the task or repository's conventions
+call for changing it.
 
 Use `*.run.ts` for TypeScript entry points. Follow the repository's layout for their placement and
 its supported runtime for launching them. When moving an entry point, update its callers and verify
@@ -118,6 +150,45 @@ flowchart LR
 ESLint enforces the import rules. The overrides for `src/apps/**/*.adapter.ts` and
 `src/libs/**/*.adapter.ts` are the allowlist, so a new adapter needs only its suffix.
 
+## Lib roles
+
+The rules here, in `code-standards`, and in `code-unit-tests-architecture` lean on a few libs by
+role. The repository's wrapper skill names the package that fills each role it has, and maps its own
+spellings to the names below, except where a checker takes a name as a flag (`--event-base`). A role
+used by one package stays inside it until a second needs it
+([§ Where code lives](#where-code-lives)); a role nothing needs gets no package.
+
+**A role the repository already fills keeps its own names.** Its logger, configuration loader, or
+command-line framework, as a package or as a module, keeps its package name, file names, and
+exports; the wrapper skill maps them to the role names, and the rules read the role names as that
+mapping. Add only a part the rules need and it lacks (a silent logger, a memory sink), inside it and
+in its own naming. Never replace it with the reference below or wrap it to rename it.
+
+| Role           | Owns                                                                     | The rules use                                                                                   |
+| -------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| Env lib        | Reading `process.env`; no other module reads it                          | `EnvService` over typed declarations: `values`, `read(source)`                                  |
+| Paths lib      | Paths under a root found by a marker file, never by `..`                 | `PathsService`: `getPath(name)`                                                                 |
+| Log lib        | Diagnostics apart from results, secret redaction; `universal`            | A logger interface and its silent form, a sink, an `Output`, memory sink and output             |
+| Server log lib | Writing logs and outputs to the process streams                          | A stream sink, log options from flags and variables, stdout and stderr outputs                  |
+| CLI lib        | Argv parsing, command dispatch, exit codes                               | The runner, `Command`, `CliUsageError`, `io` (`output`, `errorOutput`, `logger`), a memory `io` |
+| Event lib      | Typed publish-subscribe                                                  | `EventerBase<Listeners>`, `Listenable<Listeners>`; the only `abstract` and `protected`          |
+| Platform lib   | Where the system installs applications and keeps data, caches, and tools | Named paths built from what the caller passes in                                                |
+
+**Start a missing role lib from its reference.** This skill ships a working lib with its suites for
+each role but the platform lib: `references/libs/env/`, `references/libs/paths/`,
+`references/libs/log/`, `references/libs/log-server/`, `references/libs/cli/`, and
+`references/libs/eventer/`. Its README states the contract. In a workspace, copy the folder into the
+repository's libs folder, then name the package the way the repository names its libs, point its
+`tsconfig.json` at the repository's environment base
+([§ Environment tsconfigs](#environment-tsconfigs)), rename its imports of the other role libs,
+spell their dependencies the way the package manager links a workspace package
+([§ Package anatomy](#package-anatomy)), and install with that manager. In a single-package
+repository, copy only its `src/` modules into a folder of the package's base layer, add them to the
+package's barrel in place of the lib's own, and move its `#<lib>/` imports and `declare module`
+blocks to the package's alias and type root. Its own layer folders come along inside that base
+folder (`base/log/core/logger/`): the layer lint reads a path from the alias, so they stay base
+code.
+
 ## Layers
 
 A package is built bottom-up in three layers, and a module imports only from its own layer or the
@@ -155,14 +226,20 @@ flowchart TB
   `universal` lib; the implementation for one environment or tool lives in a lib or app on top of it
   (a log lib of loggers and sink interfaces, a server log lib of the sinks that write to a process),
   never the reverse.
-- **Folders arrive with the code.** A lib stays flat (`src/<module>.ts`) while its modules all sit
-  in one layer; once they span two, it takes the layer folders, and an empty layer has no folder.
+- **Every package has the same layers, from its first module.** A lib uses the layer folders an app
+  does: `config/`, `base/`, and `core/<concept>/`, with ready instances that only wire concepts in
+  `core/composer/`; `src/` holds nothing but `index.ts` and those folders, and an empty layer has no
+  folder. A one-module lib still puts its module in a concept folder, so a lib that grows adds
+  modules and never moves the ones it has.
 
 ## Package anatomy
 
-In the default layout, each folder under `src/apps/` and `src/libs/` is a private pnpm workspace
-package, consumed as TypeScript source through tsx. Apply the checks for this layout where the
-repository adopts it. For an existing layout, use its package boundaries and launch path.
+In the default layout, each folder under `src/apps/` and `src/libs/` is a private workspace package,
+listed in the package manager's workspace list (`pnpm-workspace.yaml`, or `workspaces` in the root
+`package.json` under npm, Yarn, and Bun) and consumed as TypeScript source through tsx. Apply the
+checks for this layout where the repository adopts it. For an existing layout, use its package
+boundaries and launch path. In a single-package repository the table describes the root package: its
+`package.json` keeps its own name, and its scripts run the entries.
 
 | Path                         | Lib                    | App            | Holds                                                                                                                                                                                                         |
 | ---------------------------- | ---------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -174,28 +251,32 @@ repository adopts it. For an existing layout, use its package boundaries and lau
 | `src/cli.run.ts`             | —                      | ✅             | The entry: passes `process` as the CLI lib's runner's argv source with the command list and sets `process.exitCode` from its result                                                                           |
 | `bin/run.sh`                 | When it has an entry   | ✅             | Executable; `run.sh <entry> [args…]` runs `src/<entry>.run.ts` through tsx. The same bytes in every package                                                                                                   |
 | `src/cli/commands/`          | —                      | ✅             | One command interface implementation per `<name>.command.ts`                                                                                                                                                  |
-| `src/cli-interactive.run.ts` | —                      | When needed    | A menu entry over the same pipeline, run as `pnpm app:<folder>:interactive`; its modules in `src/cli/interactive/`                                                                                            |
+| `src/cli-interactive.run.ts` | —                      | When needed    | A menu entry over the same pipeline, run as the root script `app:<folder>:interactive`; its modules in `src/cli/interactive/`                                                                                 |
 | `src/base/`                  | When needed            | When needed    | The [base layer](#layers): building blocks no concept owns, shared interfaces, generic classes, and concept-free adapters (a cache, an Observer, a process runner)                                            |
 | `src/base/utils/`            | When needed            | When needed    | Stateless functions that import nothing from `core/`, one topic per file (`units.ts`, `time-formatter.ts`); no classes                                                                                        |
 | `src/core/<concept>/utils/`  | When needed            | When needed    | Stateless functions over that concept's data, one topic per file (`catalog-entries.ts`); no classes                                                                                                           |
-| `src/config/`                | —                      | When needed    | Runtime configuration and static inputs the app ships (paths, prompt files), beside the [base layer](#layers)                                                                                                 |
-| `src/core/<concept>/`        | When needed            | ✅             | The [core layer](#layers): one folder per concept (`core/deck/`, `core/verify/`), adapters beside the domain code they serve                                                                                  |
+| `src/config/`                | When needed            | When needed    | Runtime configuration and static inputs the package ships (paths, prompt files, its env and paths services), beside the [base layer](#layers)                                                                 |
+| `src/core/<concept>/`        | ✅                     | ✅             | The [core layer](#layers): one folder per concept (`core/deck/`, `core/verify/`), adapters beside the domain code they serve                                                                                  |
 | `test/`                      | When it has pure logic | ✅             | node:test suites mirroring `src/`, per `code-unit-tests-architecture`                                                                                                                                         |
 | `docs/`                      | —                      | When needed    | An input contract too large for the README (`deck-format.md`)                                                                                                                                                 |
 
 - **Code lives in `src/`, tests in `test/`, the launcher in `bin/run.sh`.** Nothing else sits at the
   package root; the checks fail on an entry outside the table.
-- **Dependencies live where they are imported.** Workspace package dependencies use `workspace:*`,
-  and pnpm's non-hoisted `node_modules` turns an undeclared one into an error. The root keeps the
-  tooling (ESLint, Prettier, TypeScript, tsx) and preview CLIs.
+- **Dependencies live where they are imported.** A dependency on a workspace package takes the
+  manager's local form: `workspace:*` under pnpm, Yarn, and Bun, a version range under npm. pnpm's
+  non-hoisted `node_modules` and Yarn Plug'n'Play turn an undeclared dependency into an error; a
+  hoisted `node_modules` (npm, Yarn's `node-modules` linker) resolves it until the package moves, so
+  review checks the declarations there. The root keeps the tooling (ESLint, Prettier, TypeScript,
+  tsx) and preview CLIs; under Plug'n'Play, a package also declares each tool its own scripts run.
 - **Pin what changes output.** A dependency whose version changes rendered output (mermaid-cli,
   marp-cli) is pinned exactly. After a lockfile change that moves it or a library it loads,
   re-render and recheck.
 - **A package's `src/` is scoped by layer**, per [§ Layers](#layers). Beside its entry files an app
   holds only `cli/` (the entry layer: `commands/`, `interactive/`), `config/`, `core/` (domain code,
-  one folder per concept), and `base/` (what several concepts build on); a lib holds `core/`,
-  `base/`, and its services; the checks fail on anything else. Folders that share a prefix nest
-  under it (`cli/commands/`, never `cli-commands/`); a hyphen only names one concept
+  one folder per concept), and `base/` (what several concepts build on); a React web app holds
+  `app/` and `skeleton/` in place of `cli/` (`react-architecture` § Web app); a lib holds `config/`,
+  `core/`, and `base/` beside its `index.ts`; the checks fail on anything else. Folders that share a
+  prefix nest under it (`cli/commands/`, never `cli-commands/`); a hyphen only names one concept
   (`capture-builder/`). A `core/` of more than about eight concepts groups them into sub-scopes by
   stage, beside `composer/`: report-builder's `core/input/`, `core/output/`, `core/quality/`.
 - **A role suffix names what a module is, from a closed set**, after the kebab-case stem
@@ -204,14 +285,14 @@ repository adopts it. For an existing layout, use its package boundaries and lau
   imports it. The environment and the streams have their own owners: the env lib reads
   `process.env`, a server log lib writes stdout and stderr, and an adapter reads stdin.
   `<name>.adapter.ts` imports a process or native library; `<name>.service.ts` holds a Service class
-  (in its lib) or the package's one instance of one (`env.service.ts`, `paths.service.ts`);
-  `<name>.command.ts` is one command interface implementation and is all `cli/commands/` holds;
-  `<name>.config.ts` holds configuration values in `config/` (`runtime.config.ts`);
-  `<name>.error.ts` holds one typed error class, `<Name>Error` (`env.error.ts` holds `EnvError`,
-  `cli-usage.error.ts` holds `CliUsageError`). The barrel key keeps the role except for an adapter's
-  (`envService`, `buildCommand`, `runtimeConfig`, `EnvError`, but `archiveBundleSource`);
-  `<name>.test.ts` and `types.ts` complete the set, and the checks fail on any other suffix or a
-  misplaced one.
+  (in its lib's `core/`) or the package's one instance of one (`config/env.service.ts`,
+  `config/paths.service.ts`); `<name>.command.ts` is one command interface implementation and is all
+  `cli/commands/` holds; `<name>.config.ts` holds configuration values in `config/`
+  (`runtime.config.ts`); `<name>.error.ts` holds one typed error class, `<Name>Error`
+  (`env.error.ts` holds `EnvError`, `cli-usage.error.ts` holds `CliUsageError`). The barrel key
+  keeps the role except for an adapter's (`envService`, `buildCommand`, `runtimeConfig`, `EnvError`,
+  but `archiveBundleSource`); `<name>.test.ts` and `types.ts` complete the set, and the checks fail
+  on any other suffix or a misplaced one.
 - **A type lives with its source.** A module declares the types it defines in its own
   `declare module` block, in its folder's namespace: a class's `INSTANCE`, a function's options and
   result, a command's report, a config's shape. A folder's `types.ts` holds only the vocabulary no
@@ -231,30 +312,33 @@ repository adopts it. For an existing layout, use its package boundaries and lau
 - **Folders name concepts** (`deck/`, `layout/`, `verify/`), never build output. `build/` and
   `dist/` collide with ignore patterns: an unanchored `build/` hides every folder of that name from
   git and lint. Composition lives in `core/composer/`.
-- **In this layout, an app runs as `pnpm app:<app> <command>`.** Its root script is named
-  `app:<app>` or `app:<app>:<variant>`; the checks check this. For example,
+- **In this layout, an app runs as its root script**: `pnpm app:<app> <command>`, or
+  `npm run app:<app> -- <command>`, since npm passes arguments on only after `--`. The script is
+  named `app:<app>` or `app:<app>:<variant>`; the checks check this. For example,
   `"app:<app>": "src/apps/<app>/bin/run.sh cli"`, and `"app:<app>:interactive"` with
   `cli-interactive`. `bin/run.sh` is committed in each package and says how its entries run
   (`exec node --import tsx src/<entry>.run.ts`); a TypeScript entry carries no shebang. Every copy
-  holds the same bytes, which the checks enforce, so a change to one is made to all. Nothing depends
-  on install state: no `bin`, no links in `node_modules/.bin`, so a clone runs the same commands as
-  this checkout. Relative argv paths resolve against the repo root, where pnpm runs root scripts,
-  wherever the command is typed. A pnpm built-in (`docs`, `audit`) cannot be the folder name.
+  holds the same bytes, which the checks enforce, so a change to one is made to all. The launch
+  depends on no install-time link: no `bin` field, nothing in `node_modules/.bin`, so a clone runs
+  the same commands as this checkout once its dependencies are installed. It passes argv, the exit
+  code, and both output channels through unchanged. Relative argv paths resolve against the repo
+  root, where the package manager runs root scripts, wherever the command is typed.
 - **A package owns the scripts over its own folder; the root only fans them out.** A root script
-  reaches a package only through its `bin/run.sh`, never into its files, and runs package scripts
-  with `pnpm -r` (`typecheck`, `test`; `build:clear` with `--parallel` when packages build), never
-  globs over package folders. A package that builds names its output in its own `build:clear`. An
-  app is not run through `pnpm --filter`: a filtered run is recursive, so it turns every failing
-  exit into `1` (losing the CLI's `2`), adds an error box on stderr, and runs in the package folder,
-  breaking relative argv paths.
+  reaches a package only through its `bin/run.sh`, never into its files. It runs `typecheck`,
+  `test`, and `build:clear` (in parallel when packages build) through the manager's run over every
+  workspace package, such as `pnpm -r` or `npm run <script> --workspaces`, never by globbing package
+  folders. A package that builds names its output in its own `build:clear`. An app is not run
+  through a per-package run (`pnpm --filter`, `npm run --workspace`, `yarn workspace`): it runs in
+  the package folder, breaking relative argv paths, and pnpm's filtered run is recursive, so it also
+  turns every failing exit into `1` (losing the CLI's `2`) and adds an error box on stderr.
 
 ### Environment tsconfigs
 
 Each package's `tsconfig.json` extends one environment base: `universal` (the ES library only),
 `server` (adds Node types), or `client` (adds the DOM). A package that runs in both places stays
 `universal`, so a stray `process` or `document` fails typecheck; its suites typecheck through a
-project of their own, per `code-unit-tests-architecture` § Typecheck. `pnpm typecheck` checks the
-root and every package.
+project of their own, per `code-unit-tests-architecture` § Typecheck. The root `typecheck` script
+checks the root and every package.
 
 ## Packages, namespaces, barrels
 
@@ -284,17 +368,21 @@ A package exposes two names and nothing else:
   barrel private in `app.ts`, nested exactly like its folders: one camelCase key per folder from
   `src/` (`RB.cli.interactive.InteractiveSession`, `RB.core.output.render.RendererChain`,
   `RB.base.utils.timeFormatter.formatClock`), so a key says where the code lives and which layer it
-  belongs to. Its `index.ts` holds only the type root.
+  belongs to. Its `index.ts` holds only the type root. A lib's barrel is public, so it stays flat
+  (`LOG.Logger`, never `LOG.core.logger.Logger`): a lib reorganizes its folders without moving a
+  call site.
 - **Type root** — an empty PascalCase namespace in `index.ts` (`export namespace Zip {}`). Each
   module adds its types with `declare module "<package>" { namespace Zip.Feature { … } }`; a class's
   type is `Zip.ZipArchiveRW.INSTANCE`, declared as
   `namespace ZipArchiveRW { type INSTANCE = ZipArchiveRW; }`. An app's namespaces follow the same
-  folder path in PascalCase (`Rb.Core.Input.Deck`, `Rb.Cli.Interactive`, `Rb.Core.Composer`).
-  Consumers write `import { ZIP, type Zip } from "<package>"`, and the inline `type` erases the
-  root. A module that only declares types, with no other import or export, is a script, where
-  `declare module` declares a new module instead of adding to the root: it ends with `export {};`. A
-  namespace member exists only in a program that contains its declaring file, so each tsconfig
-  includes the folders that declare what it reads.
+  folder path in PascalCase (`Rb.Core.Input.Deck`, `Rb.Cli.Interactive`, `Rb.Core.Composer`). A
+  lib's type root is public like its barrel, so it never names a folder: a type sits at the root
+  (`Log.Sink`) or under its module's name (`Cli.ProcessIo.IoFlags`), never `Cli.Core.Io`, and a move
+  inside the lib changes no consumer. Consumers write `import { ZIP, type Zip } from "<package>"`,
+  and the inline `type` erases the root. A module that only declares types, with no other import or
+  export, is a script, where `declare module` declares a new module instead of adding to the root:
+  it ends with `export {};`. A namespace member exists only in a program that contains its declaring
+  file, so each tsconfig includes the folders that declare what it reads.
 - **Imports** — another package only through its barrel, never a deep path. A package reaches its
   own modules through its `#<folder>/*` alias (`#zip/zip-archive-rw.adapter.ts`, `#zip/index.ts`),
   never by its own package name, and never by `./` or `../`. Import the `.ts` file, not NodeNext's
@@ -352,10 +440,11 @@ The entry, domain, and adapter layers of `code-standards` § Module organisation
 - Flags are `--flag value` or `--flag=value`; a bare flag reads as `"true"`.
 - Exit `0` when done, `1` on bad input or a failed step, `2` for findings the caller must act on
   (`verify`).
-- stdout carries results only, so it pipes; logs, errors, and usage go to stderr. Every app takes
-  the log flags the runner reads, `--log-level`, `--silent`, `--log-format pretty|plain|json|gcp`,
-  `--log-dest`, `--no-color`, and their `LOG_*`/`NO_COLOR` variables, as documented by the server
-  logging lib.
+- stdout carries results only, so it pipes; logs, errors, and the usage a bad command or flag prints
+  go to stderr, while `--help` asked for is a result. Every app takes the log flags the runner
+  reads: at least `--log-level` and `--log-format`, each over its `LOG_*` variable, the flag
+  winning. The server log lib documents the rest it offers, such as `--silent`, a destination, or
+  colour.
 - Outputs go only to paths named on argv, and a command never silently replaces a person's work on
   an output: report-builder stops when the deck changed since its build, until `--absorbed`.
 - A command that writes to a live system (a database, a cloud account, a deployed app, a vendor API)
@@ -370,20 +459,25 @@ The entry, domain, and adapter layers of `code-standards` § Module organisation
   changes its output (tool version, options, source) and reruns only on a mismatch or a missing
   output; `--force` overrides (`diagrams`).
 - **Read the environment through `env.service.ts`.** A package that reads a variable declares it in
-  its own `env.service.ts` (`src/config/` in an app, `src/` in a lib): a zod schema of every
-  variable it reads, each with its type, `.optional()` when it may be unset, and a one-line comment,
-  default-exported as one instance of the env lib's `EnvService` (`RB.config.envService`). Code
-  reads `envService.values` inside functions, never at module scope, so a bad value fails inside the
-  command; a child process gets `envService.getChildEnvMap(overridesMap)`; a suite passes
-  `envService.read(source)`. The env lib is the only reader of `process.env`, and ESLint fails it
-  anywhere else.
+  its own `env.service.ts` (`src/config/`): a typed declaration of every variable it reads (a zod
+  schema, or the env lib's own field readers), each with its type, whether it may be unset or has a
+  default, and a one-line comment, default-exported as one instance of the env lib's `EnvService`
+  (`RB.config.envService`). Code reads `envService.values` inside functions, never at module scope,
+  so a bad value fails inside the command; a suite passes `envService.read(source)`. A package that
+  starts a child process builds the child's environment through the env service, never from
+  `process.env`. The env lib is the only reader of `process.env`, and ESLint fails it anywhere else.
+- **A browser app with deployment settings reads them once, at bootstrap.** The server sends them
+  with the page (an inline JSON element or a settings request), and `src/config/` parses them by a
+  schema into readonly groups; a missing or bad value fails before the app or any service that reads
+  them starts. Build-time constants carry only what the build knows (version, build mode), so one
+  bundle serves every deployment, and nothing secret reaches the browser.
 - **Name paths in `paths.service.ts`, never climb to them.** A package that reads its own files or
-  the repo root declares them in its `paths.service.ts` (`src/config/` in an app, `src/` in a lib):
-  one instance of the paths lib's `PathsService` over `import.meta.url` and a map of
-  package-relative names (`RB.config.pathsService.getPath("prompts")`, `.repoRootPath`,
-  `.getRepoPath(".cache")`). Code reads it inside functions. ESLint fails a `..` segment in a string
-  passed to `path.*` and any `import.meta.dirname`; a skill script, which cannot import `src/`,
-  roots on the nearest folder above `import.meta.url` that holds its `SKILL.md`.
+  the repo root declares them in its `paths.service.ts` (`src/config/`): one instance of the paths
+  lib's `PathsService` over `import.meta.url`, the marker file that finds its root, and a map of
+  names relative to that root (`RB.config.pathsService.getPath("prompts")`). Code reads it inside
+  functions. ESLint fails a `..` segment in a string passed to `path.*` and any
+  `import.meta.dirname`; a skill script, which cannot import `src/`, roots on the nearest folder
+  above `import.meta.url` that holds its `SKILL.md`.
 - **Parse outside data tolerantly.** Data the package observes rather than owns — a server's
   response, a record another tool keeps, a file a released version wrote — is parsed in its adapter
   by a schema tagged `@external` and mapped there to a domain type. One list item in an unexpected
@@ -431,7 +525,7 @@ through one contract module.
 When several views or processes show the same state — a server and its clients, a background process
 and its views, a worker and its pages — one side owns it and the others hold copies. The state
 library is the repository's own (a reducer store, signals, observables); these rules hold for any of
-them.
+them. Views in one process that read one model share it and need none of the copy rules below.
 
 - **One owner changes the state, and data flows one way.** Only the owner applies a change. A view
   reads its copy and never writes it; it asks the owner through one typed object of named requests
@@ -453,7 +547,7 @@ them.
 - **Reactions read through selectors.** Code that reacts to a change reads state only through the
   selectors views use, so a part's shape is read in one place. It does no I/O while it registers
   (that waits for `start()`, [§ Inside an app](#inside-an-app)), and when requests overlap, the
-  latest wins and the older ones are cancelled.
+  latest wins and the older ones are cancelled ([§ Cancellable work](#cancellable-work)).
 - **A request splits into what needs nothing and what needs the outside world.** The state change
   applies what needs nothing more; a reaction runs what needs I/O (a dialog, the OS, the network)
   and records its result as a new change. Both list every request kind (`code-standards` § Module
@@ -486,6 +580,93 @@ them.
   choice before work that can fail (sign out, then restart) finishes in `finally`, so what is saved
   and what runs cannot drift apart.
 
+## Cancellable work
+
+Work that a newer request, a closed view, or a shutdown can make useless stops when that happens,
+and releases what it holds.
+
+- **The owner holds the handle.** The part that starts the work keeps its cancel handle (an
+  `AbortController`, a task) in a field, cancels it when the work is superseded or the part is
+  disposed, and awaits the cleanup before it starts the next run or reports itself stopped.
+- **A request flow takes an `AbortSignal`.** A fetch, a read, or a chain of them passes the caller's
+  signal down to every call: the client stops waiting and aborts the transport, though work the
+  server has already started may still finish. This covers most work, with plain `async` and
+  `await`.
+- **A stepwise flow that acquires resources runs as a scoped task.** When a flow opens or starts
+  things one step at a time (a media pipeline, a device, a worker, child tasks) and a newer request
+  can supersede it midway, an `async` chain stops only where it checks the signal, and its cleanup
+  is whatever each step remembered to write. Such a flow is a generator function under a
+  structured-concurrency runtime (effection, or the repository's own): each `yield` is a point where
+  a halt stops it, its `finally` releases what it acquired, and child tasks end with it. The task
+  bridges its halt to an `AbortSignal` for the requests it makes, and an acquisition that cannot be
+  aborted releases its result when it arrives after the halt. A generator is used only for this;
+  everywhere else stays `async`.
+- **The latest attempt wins.** A part that runs one attempt at a time takes a new, rising attempt
+  id, then halts the previous attempt and awaits its cleanup. It checks the id again before it
+  starts work and before it commits a result, and drops any result whose id is no longer current.
+- **A cancel is an outcome.** A cancelled run returns a `cancelled` member of its outcome union
+  (`code-standards` § Outcomes and faults), never an error matched by its message, and a caller that
+  cancelled it ignores it.
+
+## Work off the main thread
+
+A worker runs code on a thread of its own: a browser's dedicated worker, an audio worklet, a Node
+`worker_threads` worker. It talks to its owner through
+[§ Contracts between processes](#contracts-between-processes); these rules add what a thread
+changes. Code: [references/workers.md](references/workers.md).
+
+- **A worker is for work that blocks the thread or must keep time where the thread cannot.** CPU
+  work a trace shows as a long task on the thread that serves the person (parsing a large file,
+  encoding, hashing, image processing, searching a large index) moves to a worker; I/O stays, since
+  awaiting it blocks nothing. Audio processed block by block runs in an audio worklet, which the
+  audio thread calls for every block and which lives with its audio graph: its owner disconnects the
+  node and closes the context, and the rules on starting and ending a worker below do not apply.
+- **The owner keeps the state; the worker computes.** The worker takes inputs and returns results,
+  keeping at most a cache of its own inputs, and the owner applies each result
+  ([§ State with one owner](#state-with-one-owner)), so a restarted worker loses nothing. The
+  computation is a plain function the worker file calls, so a suite tests it without a worker.
+- **A worker's own channel is typed, not checked.** A dedicated worker and its creator come from one
+  build, so their messages are the trusted side's typed messages of § Contracts between processes.
+  Data the worker reads from outside, and a port handed to other code, are checked as that section
+  says.
+- **Large data changes hands; it is not copied.** A message is a structured clone of plain data. An
+  `ArrayBuffer`, an `ImageBitmap`, or a `MessagePort` in the transfer list moves to the receiver and
+  leaves the sender without it. A typed array moves its whole buffer, so the sender passes one that
+  owns all of a non-shared buffer (`Float32Array<ArrayBuffer>`), or a copy. Input that several
+  requests share is sent once and named by the requests after it.
+- **One reusable worker per kind of work, started on first use, ended with its owner.** A worker
+  costs a fetch and an evaluation to start, so its owner creates it on the first request, reuses it,
+  and terminates it on dispose; the owner takes the creating function as a dependency, which keeps
+  the bundler's `new Worker(new URL(…))` literal in one place and gives a suite a fake. A pool comes
+  only after a measurement shows one worker is the bottleneck; its size starts from the machine's
+  estimate (`navigator.hardwareConcurrency`, `os.availableParallelism()`) and grows only while a
+  benchmark shows a gain.
+- **Every request ends in an outcome.** A request takes the caller's signal and a deadline
+  ([§ Cancellable work](#cancellable-work)). A failure to create the worker or send the message, a
+  message that cannot be read (`messageerror`), a crash (`error`, or Node's `exit`), and a missed
+  deadline each answer the pending requests as failed. The owner ignores a reply from a worker it
+  has already replaced: a browser drops replies still queued from a terminated worker, but Node's
+  `terminate()` finishes later and can still deliver one.
+- **Cancelling a computation ends it.** A computation that runs in chunks yields a task between them
+  (`setTimeout`, `scheduler.yield()`), so a cancel message can arrive, and checks for it; one that
+  cannot is stopped by terminating its worker, and the next request starts a new one.
+- **A cadence that must hold in a hidden tab takes its wakeups from a worker.** A hidden page gets
+  no animation frames, and its own timers are throttled: to once a second, and in Chromium to once a
+  minute for chained timers after five minutes hidden, on a page that is silent and has no WebRTC
+  connection. A loop that must keep time while hidden (a recording's frame pump, a countdown, a
+  session heartbeat) runs on animation frames while the page is visible and on the ticks of one
+  shared timer worker while it is hidden. The worker only wakes the page: the loop's step still runs
+  on the page's thread, and it works out what is due from a clock, since ticks arrive late and in
+  bursts. No browser promises a worker's cadence, so a test with the tab hidden for more than five
+  minutes checks it on every target browser. A frozen page's workers freeze with it, and a worker
+  does not keep a tab from being frozen or discarded, so work that must survive that saves its
+  progress as it goes ([§ State that outlives a run](#state-that-outlives-a-run)). A desktop window
+  that must keep time turns its host's throttling off instead (Electron's
+  `backgroundThrottling: false`); the page then always reads as visible, so the host's own window
+  state tells it when no one is looking.
+- **Work only a viewer needs pauses while hidden.** Polling that refreshes what someone is looking
+  at (a list, comments, notifications) stops while the page is hidden and refreshes once on return.
+
 ## Regression gates
 
 - **Unit tests** follow `code-unit-tests-architecture`: what gets a suite, `test/` mirroring `src/`,
@@ -515,6 +696,11 @@ them.
 
 ## README contract
 
+A README is written for people: someone who has not seen the package learns what it is for, how its
+parts fit, and how it is checked, in plain words. A diagram helps them more than a list does when
+the parts depend on each other or data moves through steps: add one simple Mermaid diagram, a few
+nodes, of the dependencies or the flow; a package a table explains needs none.
+
 - **Lib** — `# @<scope>/lib-<folder>`, then one paragraph on what it gives the apps; a table of
   barrel keys and what each holds; a short usage snippet; who uses it, what it depends on, and
   platform limits.
@@ -522,6 +708,10 @@ them.
   command table and exit codes; sections for the input contract and engine behaviour; `## Structure`
   with the barrel, the folder table, and the libs it shares; `## Engine notes` for the gotchas;
   `## Tests`, with what the suites cover and the real runs that check the adapters.
+- **Skill script package** — `# <package name>`, then one paragraph on what the scripts do and a
+  link to `../SKILL.md` for how they run (commands, flags, and exit codes stay there);
+  `## Structure` with the entries, the barrel, the folder table, and the libs it uses; `## Tests`,
+  with what the suites cover and the real runs that check the adapters.
 - An app that runs as several processes, or whose state moves between parts, shows both in
   `## Structure` as Mermaid diagrams: one of its parts and what each depends on, one of how data
   flows from a request to the screen.
@@ -530,7 +720,9 @@ them.
 
 1. Follow the existing workspace's package and toolchain conventions. In the default layout, create
    `src/apps/<folder>/` or `src/libs/<folder>/` with the files in
-   [§ Package anatomy](#package-anatomy) and run `pnpm install` to link it.
+   [§ Package anatomy](#package-anatomy) and run the package manager's install to link it. In a
+   single-package repository, a second package changes the repository's shape: ask first
+   ([§ Repository shapes](#repository-shapes)).
 2. In the lint config, add a per-package override for `src/<apps|libs>/<folder>/**/*.ts` whose
    `@typescript-eslint/no-restricted-imports` bans its own name (`@<scope>/lib-<folder>` or
    `@<scope>/app-<folder>`); an app's also bans every other app package. Repeat the `src/**/*.ts`
@@ -568,6 +760,12 @@ them.
   `Startable`, built once in one composition root that passes inputs, not assembled state.
 - Shared state has one owner: views read copies built from a snapshot and numbered changes, ask
   through named requests, and show what the owner holds; real-time data bypasses the state.
+- Work that can be superseded is cancelled by its owner: requests take a signal, stepwise resource
+  flows run as scoped tasks that release in `finally`, stale attempts are dropped, and a cancel is
+  an outcome.
+- A worker holds CPU work or a hidden-tab cadence, never state: it starts on first use, moves large
+  buffers by transfer, answers every request with an outcome, ends on cancel or dispose, and its
+  cadence was checked with the tab hidden.
 - Every lint restriction names its fix, and a boundary between layers is a rule.
 - Each new guard was seen to fail on a planted violation.
 - In a package: one default export per module (the value itself when there is one), types in the

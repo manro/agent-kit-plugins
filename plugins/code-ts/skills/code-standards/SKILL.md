@@ -24,7 +24,9 @@ small scripts — the class-or-function table below is what keeps a small script
 
 Lint and the naming checker enforce the mechanical rules; where this skill says the checker fails a
 pattern, [§ Run the checker](#run-the-checker) reports it. The repository's `AGENTS.md` or wrapper
-skill names its event library, the folders to check, and any local additions.
+skill names its event library, the folders to check, and any local additions. The rules shape new
+and changed code; an existing package, module, or export keeps its name, and a rename to fit them is
+a change of its own the user asks for (`code-architecture` § Repository shapes).
 
 ## Run the checker
 
@@ -332,19 +334,23 @@ A class that announces what happens to it publishes events; it never takes a not
 
 - **An event is a notification** — progress, a state change, a step that needs the user. The
   publisher does not know who listens or how many, and a listener returns nothing. The class extends
-  `EventerBase<Listeners>` from the repository's event library and calls `this.emit(name, …args)`;
-  holders subscribe with `addEventListener`.
+  `EventerBase<Listeners>` from the repository's event library (`code-architecture` § Lib roles) and
+  calls `this.emit(name, …args)`; holders subscribe with `addEventListener`.
 - **The listeners map is a `type` named `<Role>Listeners`** in the type root beside the class or the
   role interface it implements. Event names are camelCase (`progress`, `signInRequired`); listener
   parameters carry their unit or count (`positionMs`, `doneCount`). A role interface takes the
   subscribe side as `extends Listenable<Listeners>`, and a test fake extends `EventerBase`.
 - **Subscribe once, where the publisher is wired** — the static factory or composition root that
   builds it, never a constructor. A listener added per call stacks; only a publisher created for one
-  call is subscribed in that call.
+  call is subscribed in that call. A subscriber that lives shorter than its publisher (a view, a
+  job) subscribes when it starts and unsubscribes when it ends.
 - **What stays a parameter:** a callback that returns a value (a Strategy, `use` in
   `withX(path, use)`, a comparator); a stream that belongs to one call, such as a spawned process's
   lines in its run spec, since an instance's listeners hear every call; and an injected collaborator
   the class calls (a progress Observer, a logger).
+- **A component's props follow its framework's convention**: an `on…` prop stays a prop, and the
+  component is named for what it renders; the checker takes a PascalCase function in a `.tsx` file
+  for a component.
 - The checker fails on a parameter named `on…` with a function type, on `extends` other than `Error`
   or `EventerBase`, and on `abstract` or `protected` outside the event library.
 
@@ -483,7 +489,8 @@ Logic, constants, types, and stateful patterns live once; everything else import
   constant.
 - **Closed sets of strings** — a set of names (stages, cache files, flags) is a literal-union type
   or one constants object: `start(stage: Stage)`, `WORK_FILE_NAMES.frames`. The checker fails a
-  string literal passed as a plain `string` twice in one module, as an argument or an option value.
+  string literal passed as a plain `string` twice in one module, as an argument or an option value;
+  a suite keeps its literals inline and is exempt.
 - **Files that cannot import** — a value a file must repeat because it cannot import the constant
   (`package.json`, YAML, SQL, a CI workflow) is checked against the constant by a test.
 - **Functions** — one implementation per behaviour. Two near-duplicate blocks become a function;

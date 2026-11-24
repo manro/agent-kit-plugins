@@ -58,17 +58,3 @@ Claude Code watches `.claude/skills/` live; when the folder itself was created a
 | ---- | ---------------------------------------------------------- |
 | 0    | Links match the skills, or `--if-present` skipped the sync |
 | 1    | Bad arguments, no skills folder, or a duplicate skill name |
-
-## Scripts
-
-`scripts/` is a package, `@manro/agent-kit-skill-claude-skill-links`, laid out like an app
-(`code-architecture` § Package anatomy) and run by plain Node. Paths below are under `src/`.
-
-| Path                           | Holds                                                     |
-| ------------------------------ | --------------------------------------------------------- |
-| `claude-skill-links.run.ts`    | The entry: runs `SyncCommand`                             |
-| `cli/commands/sync.command.ts` | Parses the flags, finds the skills, applies the link plan |
-| `core/link/link-planner.ts`    | The create, repoint, and remove actions; shadowed names   |
-| `base/fs-links-dir.adapter.ts` | The links folder on disk                                  |
-
-Skill discovery and duplicate names come from `@manro/lib-agent-skills`.

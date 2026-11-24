@@ -68,19 +68,3 @@ other path when a file of the same name exists elsewhere in the vault.
 | 0    | `PASS`: no failures; warnings may remain    |
 | 1    | Bad arguments, or no `WIKI.md` at `--vault` |
 | 2    | `FAIL`: at least one failure is left to fix |
-
-## Scripts
-
-`scripts/` is a package, `@manro/agent-kit-skill-wiki-lint`, laid out like an app
-(`code-architecture` § Package anatomy) and run by plain Node: code in `src/`, suites in `test/`.
-Paths below are under `src/`.
-
-| Path                              | Holds                                                        |
-| --------------------------------- | ------------------------------------------------------------ |
-| `wiki-lint.run.ts`                | The entry: runs `LintCommand` and prints its report          |
-| `cli/commands/lint.command.ts`    | Parses the flags, wires the checkers, prints, picks the exit |
-| `cli/lint-report-formatter.ts`    | The report as lines                                          |
-| `base/fs-vault-reader.adapter.ts` | The vault on disk: notes, raw count, path checks             |
-| `core/note/`                      | Frontmatter parser, Markdown scanner, note classifier        |
-| `core/check/`                     | `LinkChecker` over all notes, `NoteChecker` over one note    |
-| `core/composer/wiki-linter.ts`    | `WikiLinter`: runs both and finds the orphans                |

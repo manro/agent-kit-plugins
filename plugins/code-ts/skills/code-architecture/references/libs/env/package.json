@@ -1,0 +1,16 @@
+{
+  "name": "@manro/lib-env",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:clear": "rm -rf dist",
+    "test": "node --disable-warning=ExperimentalWarning --test 'test/**/*.test.ts'",
+    "typecheck": "tsc --noEmit"
+  },
+  "imports": {
+    "#env/*": "./src/*"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

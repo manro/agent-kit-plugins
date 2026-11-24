@@ -9,7 +9,8 @@ description: >-
 # Code Unit Tests Architecture
 
 How the unit tests of TypeScript packages are laid out and written. The consuming repository names
-its scope, its libs, and its checks in its own wrapper skill or AGENTS.md. Examples use
+its scope, its libs, and its checks in its own wrapper skill or AGENTS.md; the env, log, CLI, and
+event libs the suites below use are the roles of `code-architecture` § Lib roles. Examples use
 `report-builder` (`RB` / `Rb`) and `@<scope>/lib-zip` (`ZIP` / `Zip`). `code-architecture` decides
 where code lives and how packages connect, and owns the `code-architecture` § Regression gates for
 moves and refactors; this skill decides how each module is tested.
@@ -25,7 +26,9 @@ moves with it; and reviewing any change in those packages that adds logic or tou
 
 ## Scope
 
-- `src/apps/*/test/**`, `src/libs/*/test/**`, and a skill script package's `scripts/test/**`
+- Each package's `test/**`: `src/apps/*/test/**` and `src/libs/*/test/**` in the default layout, the
+  root `test/**` in a single-package repository (`code-architecture` § Repository shapes)
+- A skill script package's `scripts/test/**`
 - Each package's `test` script and the root `test` script
 
 ## What gets a suite
@@ -34,7 +37,7 @@ moves with it; and reviewing any change in those packages that adds logic or tou
 | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | Logic with branches: parsers, validation, layout, matching, filters, formatting  | A suite of its own                                                                              |
 | A wrapper over a process or native tool (`FfmpegFrameSource`, `MlxVlmDescriber`) | A suite that hands it a fake runner and checks the arguments it builds and the output it parses |
-| The process call inside an adapter, a command's wiring, a composition root       | A real run of the command, named in the app README's `## Tests`                                 |
+| The process call inside an adapter, a command's wiring, a composition root       | A real run of the command, named in the package README's `## Tests`                             |
 | Load order of the barrel                                                         | `test/barrel-load.test.ts`, in every app                                                        |
 
 - **No process, network, browser, or model in a suite.** A suite runs in milliseconds on any machine
@@ -71,10 +74,11 @@ moves with it; and reviewing any change in those packages that adds logic or tou
   followed by the command's usage", never "runCli works" or a function name.
 - **Code is reached through the package's own barrel.** An app's suite imports `#<folder>/app.ts`
   (`RB.core.media.ffmpegFrameSource.parseShowinfo`), a lib's `#<folder>/index.ts`, types through the
-  type root (`import type { Rb } from "#report-builder/index.ts"`), and another package through
-  `@<scope>/lib-<folder>` or `@<scope>/app-<folder>`. Never a deep module path: the suite calls the
-  keys callers call, and a module the barrel misses fails. A pure step worth testing is a key on its
-  module's default object (`frameReader.composeFrame`), never a test-only export.
+  type root (`import type { Rb } from "#report-builder/index.ts"`), and another package through its
+  package name (`@<scope>/lib-<folder>` or `@<scope>/app-<folder>` in the default layout). Never a
+  deep module path: the suite calls the keys callers call, and a module the barrel misses fails. A
+  pure step worth testing is a key on its module's default object (`frameReader.composeFrame`),
+  never a test-only export.
 - **Fakes are object literals typed by the interface.** `const runner: Rb.Base.Runner = { run }`
   records what it received and answers the way the real collaborator does; the test asserts on both.
   A fake of a role that publishes events is a small class extending the event lib's `EventerBase`.
@@ -89,7 +93,7 @@ moves with it; and reviewing any change in those packages that adds logic or tou
 Every app keeps `test/barrel-load.test.ts`. It imports `app.ts`, checks that every group has keys,
 and pins the command list. A module that reads the barrel at module scope makes it fail with
 `Cannot access … before initialization` (`code-architecture` § Packages, namespaces, barrels), so a
-broken import order shows in `pnpm test` before the first real run.
+broken import order shows in the root `test` script before the first real run.
 
 ## Type-level tests
 
@@ -98,15 +102,20 @@ A type the code infers — a contract's message types from their schemas, a mapp
 `test()`, and compile with the suites:
 
 ```ts
+// `T` also types the probe parameter, so lint's single-use type parameter rule passes.
 type IsEqual<A, B> =
-  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
-
-function assertType<T extends true>(_isTrue: T): void {}
+  (<T>(_probe: T) => T extends A ? 1 : 2) extends <T>(_probe: T) => T extends B ? 1 : 2
+    ? true
+    : false;
 
 test("each request type is inferred from its schema", () => {
-  assertType<IsEqual<App.Ipc.InvokeRequest<"download">, App.Ipc.Download.Request>>(true);
+  const isInferred: IsEqual<App.Ipc.InvokeRequest<"download">, App.Ipc.Download.Request> = true;
+
+  assert.equal(isInferred, true);
 });
 ```
+
+The typed `const` is the assertion: when the types drift, `true` no longer fits it.
 
 - **Misuse stays under `@ts-expect-error`** in a function the suite never calls: a wrong handler, a
   wrong payload, an unknown key. Each such line is proven per `code-architecture` § Regression
@@ -147,10 +156,13 @@ typecheck through `test/tsconfig.json`, which extends the server environment bas
 
 - **Each package runs its own suites.** A package with `test/` has the script
   `"test": "node --import tsx --test 'test/**/*.test.ts'"`, which the checks check, and the root
-  `pnpm test` is `pnpm -r test`, one prefixed run per package.
-- One package: `pnpm --filter @<scope>/app-<folder> test` or
-  `pnpm --filter @<scope>/lib-<folder> test`. One suite: `node --import tsx --test <path>.test.ts`;
-  one test: add `--test-name-pattern "<words from its name>"`.
+  `test` script runs every package's in turn (`pnpm -r test`, `npm run test --workspaces`); in a
+  single-package repository the root `test` script is the package's own.
+- One package: its `test` script through the manager's per-package run
+  (`pnpm --filter @<scope>/lib-<folder> test`, `npm run test --workspace @<scope>/lib-<folder>`,
+  `yarn workspace @<scope>/lib-<folder> test`). One suite:
+  `node --import tsx --test <path>.test.ts`; one test: add
+  `--test-name-pattern "<words from its name>"`.
 - A change is done when the repository's test, typecheck, lint, and package anatomy checks pass.
 
 ## Review checklist
@@ -163,4 +175,5 @@ typecheck through `test/tsconfig.json`, which extends the server environment bas
 - Inferred types carry type-level assertions, and generic APIs are compared key by key.
 - A real-run script uses a throwaway state folder and its own stand-ins, and its README row says
   what it proves.
-- The app README's `## Tests` names what the suites cover and the real runs that check the adapters.
+- The package README's `## Tests` names what the suites cover and the real runs that check the
+  adapters.
