@@ -23,6 +23,11 @@
       "name": "agents-infra",
       "source": "./plugins/agents-infra",
       "description": "Agent infrastructure for repositories: audit AGENTS.md, skills, and MCP templates, and link skills for Claude Code."
+    },
+    {
+      "name": "ci",
+      "source": "./plugins/ci",
+      "description": "CI workflows and keyless cloud access: GitHub Actions standards and OIDC to AWS and GCP, for Claude Code and Codex."
     }
   ],
   "description": "Personal skills and workflows for Claude Code, Codex, and Cursor."

@@ -244,8 +244,10 @@ build/                          the packager's resources: entitlements, icons
   published last and never cached. A server that must break old apps raises its minimum version, and
   an app below it shows that an update is required.
 - **A release runs by hand, per channel**, as a dry run by default. Checks that can refuse it run on
-  Linux first; the build runs in the channel's environment, which holds the signing secrets and the
-  cloud role that may write only its folder, assumed through the CI's OIDC token.
+  Linux first, and a 403 from the feed passes only on a first release. The macOS build holds the
+  signing secrets and no cloud access; a separate job that installs nothing publishes its artifact
+  with the channel's role, assumed through the CI's OIDC token (`ci-cloud-oidc`), and no job
+  restores a cache.
 - **The signing identity is one for every channel**, so every environment that holds it, dev
   included, accepts protected branches only: a branch anyone can push must not reach the certificate
   or the notary key.
@@ -285,4 +287,5 @@ build/                          the packager's resources: entitlements, icons
   server over https and not overridable when packaged.
 - No `node_modules` shipped; fuses set; signed, notarized, stapled; local builds ad hoc.
 - Feed last and uncached; release by hand, dry run first, version gate, per-channel environment and
-  OIDC role; every environment holding the signing identity limited to protected branches.
+  OIDC role on a publish job that installs nothing, no cache; every environment holding the signing
+  identity limited to protected branches.

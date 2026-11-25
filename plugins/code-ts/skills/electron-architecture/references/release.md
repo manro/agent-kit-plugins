@@ -12,8 +12,9 @@ no stored cloud key. What was checked, and how, is stated at each step:
 - The Terraform passes `terraform fmt`. Signing, notarizing, publishing, the updater's install, and
   the AWS role follow a workflow in production use, but were not run here: they need the release
   identities.
-- The workflow and the cloud role are language-neutral CI; they move to a CI skill once the kit has
-  one, and this page keeps what the packager and the updater need from a release.
+- The rules behind the workflow are `ci-github-actions`' and those behind the role
+  `ci-cloud-oidc`'s, in the `ci` plugin; this page keeps what a desktop release adds to them: the
+  macOS runner, signing, notarizing, and the update feed.
 
 ```mermaid
 flowchart LR
@@ -362,8 +363,8 @@ name: Desktop release
 # the channel's folder in the public release bucket, where installed apps read their updates. Each
 # channel's environment enforces its branches: dev any protected branch, since it holds the same
 # signing identity as prod; prod the release branch only. A run releases only a version newer than
-# its channel's feed. A dry run, the default, does all of it but
-# publish, and reports what a real run would refuse instead of stopping.
+# its channel's feed. A dry run, the default, does all of it but publish, and reports what a real
+# run would refuse instead of stopping.
 on:
   workflow_dispatch:
     inputs:
@@ -377,6 +378,10 @@ on:
         description: "Dry run: check, build, sign, and notarize, but publish nothing"
         type: boolean
         default: true
+      first_release:
+        description: "The channel's first release: read a 403 from its feed as nothing published"
+        type: boolean
+        default: false
 
 # One run per channel at a time: a second waits, then finds its version published and stops.
 concurrency:
@@ -407,6 +412,7 @@ jobs:
         env:
           CHANNEL: ${{ inputs.channel }}
           DRY_RUN: ${{ inputs.dry_run }}
+          FIRST_RELEASE: ${{ inputs.first_release }}
           RELEASES_URL: ${{ vars.DESKTOP_RELEASES_URL }}
           RELEASE_BRANCH: ${{ vars.DESKTOP_RELEASE_BRANCH }}
         run: |
@@ -431,10 +437,17 @@ jobs:
 
           # a feed that cannot be read stops the run, so a network error never lets an old version out
           feed="$RUNNER_TEMP/latest-mac.yml"
+          published=
           status=$(curl -s -o "$feed" -w '%{http_code}' "$RELEASES_URL/$CHANNEL/latest-mac.yml" || true)
           case "$status" in
-            # nothing published yet: a bucket that may not be listed answers 403 for a missing key
-            403 | 404) published= ;;
+            404) ;;
+            # a bucket that may not be listed answers 403 for a missing key, but so does one whose
+            # reads broke: only a first release, said so, reads 403 as nothing published
+            403)
+              if [ "$FIRST_RELEASE" != true ]; then
+                refuse "the $CHANNEL feed answered HTTP 403: if $CHANNEL has never been released, run with first_release"
+              fi
+              ;;
             200)
               published=$(sed -n 's/^version: *//p' "$feed")
               [[ $published =~ $semver ]] || refuse "cannot read the version in the $CHANNEL feed"
@@ -449,11 +462,10 @@ jobs:
 
           echo "::notice::$CHANNEL $version (published: ${published:-nothing})"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+      # no cache in a release: what ships is built from the lockfile's packages, never a restored one
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24"
-          cache: npm
-          cache-dependency-path: src/apps/desktop/package-lock.json
       # the unit tests never start Electron, so its binary is not downloaded here
       - name: Install dependencies
         env:
@@ -462,40 +474,32 @@ jobs:
       - name: Typecheck and unit tests
         run: npm run typecheck && npm test
 
-  macos-release:
+  # Builds, signs, and notarizes with the channel's signing secrets, and keeps the result as this
+  # run's artifact. No cloud access: every step here runs the dependencies' code.
+  macos-build:
     needs: prepare
     runs-on: macos-15
     timeout-minutes: 60
-    # per channel: DESKTOP_SERVER, the server built into the app, and DESKTOP_AWS_ROLE_ARN, the role
-    # that may write only that channel's folder and trusts only this environment. Both environments
-    # hold the one Developer ID and notary key, so each admits protected branches only.
     environment: desktop-${{ inputs.channel }}
     permissions:
       contents: read
-      id-token: write # the token the AWS role is assumed with
     defaults:
       run:
         working-directory: src/apps/desktop
     env:
       DESKTOP_CHANNEL: ${{ inputs.channel }}
       DESKTOP_RELEASES_URL: ${{ vars.DESKTOP_RELEASES_URL }}
-      DESKTOP_S3_PATH: ${{ vars.DESKTOP_S3_PATH }}
     steps:
       # the environment's variables, which the prepare job cannot see, before the long build
       - name: Check the environment's variables
         working-directory: .
         env:
           SERVER: ${{ vars.DESKTOP_SERVER }}
-          ROLE_ARN: ${{ vars.DESKTOP_AWS_ROLE_ARN }}
-          REGION: ${{ vars.DESKTOP_AWS_REGION }}
           APPLE_API_KEY_ID: ${{ vars.DESKTOP_APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ vars.DESKTOP_APPLE_API_ISSUER_ID }}
         run: |
           need() { test -n "$1" || { echo "::error::set the variable $2"; exit 1; }; }
-          need "$DESKTOP_S3_PATH" DESKTOP_S3_PATH
           need "$SERVER" DESKTOP_SERVER
-          need "$ROLE_ARN" DESKTOP_AWS_ROLE_ARN
-          need "$REGION" DESKTOP_AWS_REGION
           need "$APPLE_API_KEY_ID" DESKTOP_APPLE_API_KEY_ID
           need "$APPLE_API_ISSUER" DESKTOP_APPLE_API_ISSUER_ID
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -504,8 +508,6 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24"
-          cache: npm
-          cache-dependency-path: src/apps/desktop/package-lock.json
       # again on macOS: Electron and native modules are per platform
       - name: Install dependencies
         run: npm ci
@@ -522,6 +524,45 @@ jobs:
           printf '%s' "$APPLE_API_KEY_P8" > "$APPLE_API_KEY"
           npm run release
           for app in dist/mac-universal/*.app; do xcrun stapler validate "$app"; done
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: desktop-release
+          path: |
+            src/apps/desktop/dist/*.dmg
+            src/apps/desktop/dist/*.zip
+            src/apps/desktop/dist/*.blockmap
+            src/apps/desktop/dist/latest-mac.yml
+          if-no-files-found: error
+          retention-days: 7
+
+  # Publishes the build with the channel's role. It installs and builds nothing, so no dependency's
+  # code runs in the one job that can ask for the OIDC token.
+  publish:
+    needs: [prepare, macos-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # DESKTOP_AWS_ROLE_ARN: the role that may write only this channel's folder and trusts only this
+    # environment
+    environment: desktop-${{ inputs.channel }}
+    permissions:
+      id-token: write
+    env:
+      DESKTOP_CHANNEL: ${{ inputs.channel }}
+      DESKTOP_S3_PATH: ${{ vars.DESKTOP_S3_PATH }}
+    steps:
+      - name: Check the environment's variables
+        env:
+          ROLE_ARN: ${{ vars.DESKTOP_AWS_ROLE_ARN }}
+          REGION: ${{ vars.DESKTOP_AWS_REGION }}
+        run: |
+          need() { test -n "$1" || { echo "::error::set the variable $2"; exit 1; }; }
+          need "$DESKTOP_S3_PATH" DESKTOP_S3_PATH
+          need "$ROLE_ARN" DESKTOP_AWS_ROLE_ARN
+          need "$REGION" DESKTOP_AWS_REGION
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: desktop-release
+          path: dist
       # credentials for an hour and no stored key; a dry run signs in too, which proves the role's
       # trust before a real run needs it
       - name: Sign in to AWS as the channel's role
@@ -565,16 +606,24 @@ except the public URLs:
   sign and notarize as the company, whichever channel's environment holds them, so the dev
   environment needs the same care as prod.
 - **Each environment limits its branches** with a deployment branch rule: prod the release branch
-  only, dev protected branches only, and either can require a reviewer. GitHub itself then withholds
-  the secrets and the role from any other run, a dry run included, and from a branch whose pushed
-  workflow would print them.
+  only, dev protected branches only, and either can require a reviewer, who then approves both of
+  the run's jobs in it. GitHub itself withholds the secrets and the role from any other run, a dry
+  run included, and from a branch whose pushed workflow would print them.
+- **Three jobs, each holding only what it needs.** `prepare` holds nothing. `macos-build` holds the
+  signing secrets and no cloud access, since every step there runs the dependencies' code. `publish`
+  installs and builds nothing, downloads the signed build, and is the one job with
+  `id-token: write`: every step of a job with it can ask for the token, so no package's script runs
+  there.
+- **No cache**: the jobs install from the registry, since a cache the default branch's other
+  workflows can write would reach the signed app.
 - **The gate runs on Linux, before the macOS runner starts**, which costs about ten times the
   minutes. A dry run reports what a real run would refuse instead of stopping, and still signs,
   notarizes, and assumes the role, which proves the secrets and the trust before a real run needs
   them.
 - **The gate reads the published feed and refuses the same or an older version.** A feed it cannot
-  read stops the run, so a network error never lets an old version out. A missing file answers 403
-  from a bucket that may not be listed, and counts as nothing published.
+  read stops the run, so a network error never lets an old version out. A 404 is nothing published;
+  a 403 is only on a channel's first release, run with `first_release`, since a bucket that may not
+  be listed answers 403 for a missing file, and so does every file once its reads break.
 - **One run per channel at a time** (`concurrency`): a second waits, then finds the version
   published and stops.
 - **Actions are pinned to a commit**, with the tag in a comment, and the checkout keeps no
@@ -583,20 +632,23 @@ except the public URLs:
 The gate's step, run against stub feeds (`exit=1` is a refusal):
 
 ```text
-feed      channel ref                 dry   result
-1.3.9     prod    refs/heads/release  no    exit=0 prod 1.4.0 (published: 1.3.9)
-none 403  dev     refs/heads/main     no    exit=0 dev 1.4.0 (published: nothing)
-1.4.0     dev     refs/heads/main     no    exit=1 dev already has 1.4.0
-1.5.0     dev     refs/heads/main     no    exit=1 dev already has 1.5.0
-HTTP 500  dev     refs/heads/main     no    exit=1 cannot check the version: HTTP 500
-garbled   dev     refs/heads/main     no    exit=1 cannot read the version in the dev feed
-1.3.9     prod    refs/heads/main     no    exit=1 prod releases from release, not main
-1.4.0     dev     refs/heads/main     yes   exit=0 warning: a real run stops here
+feed      channel ref                 dry  first  result
+1.3.9     prod    refs/heads/release  no   no     exit=0 prod 1.4.0 (published: 1.3.9)
+none 403  dev     refs/heads/main     no   no     exit=1 the dev feed answered HTTP 403
+none 403  dev     refs/heads/main     no   yes    exit=0 dev 1.4.0 (published: nothing)
+1.4.0     dev     refs/heads/main     no   no     exit=1 dev already has 1.4.0
+1.5.0     dev     refs/heads/main     no   no     exit=1 dev already has 1.5.0
+HTTP 500  dev     refs/heads/main     no   no     exit=1 cannot check the version: HTTP 500
+garbled   dev     refs/heads/main     no   no     exit=1 cannot read the version in the dev feed
+1.3.9     prod    refs/heads/main     no   no     exit=1 prod releases from release, not main
+1.4.0     dev     refs/heads/main     yes  no     exit=0 warning: a real run stops here
+none 403  dev     refs/heads/main     yes  no     exit=0 warning: a real run stops here
+HTTP 500  dev     refs/heads/main     yes  no     exit=0 warning: a real run stops here
 ```
 
 ## 6. Cloud access without a stored key
 
-The macOS job asks GitHub for an OIDC token (`id-token: write`) and trades it for an hour as its
+The publish job asks GitHub for an OIDC token (`id-token: write`) and trades it for an hour as its
 channel's role. The role trusts only jobs in its own environment, and may write only its channel's
 folder, so a dev run can never write the feed every released app reads.
 
@@ -699,24 +751,14 @@ output "role_arns" {
 - **The role writes, and nothing else**: `s3:PutObject` overwrites the feed file, and
   `s3:AbortMultipartUpload` cleans up a large upload cut short. It cannot read, list, or delete.
 - **The bucket lets anyone read the app's prefix and nobody list it**, so a missing feed answers
-  403, which the gate reads as nothing published. A bucket name with dots fails TLS at its
-  `<bucket>.s3.<region>.amazonaws.com` address; the apps read through the CDN's host instead.
+  403, which the gate reads as nothing published on a first release only. A bucket name with dots
+  fails TLS at its `<bucket>.s3.<region>.amazonaws.com` address; the apps read through the CDN's
+  host instead.
 
-**Google Cloud Storage** takes the same shape:
-
-- A workload identity pool with a GitHub provider (issuer
-  `https://token.actions.githubusercontent.com`) maps `google.subject=assertion.sub` and keeps an
-  attribute condition on `assertion.repository`.
-- One service account per channel lets only that environment's subject impersonate it
-  (`roles/iam.workloadIdentityUser` for
-  `principal://iam.googleapis.com/projects/<number>/locations/global/workloadIdentityPools/<pool>/subject/repo:<owner>/<repo>:environment:desktop-<channel>`).
-- That account writes the channel's prefix only, through an IAM condition on
-  `resource.name.startsWith("projects/_/buckets/<bucket>/objects/desktop/<channel>/")`.
-- The job signs in with `google-github-actions/auth` (`workload_identity_provider`,
-  `service_account`) and uploads with `gcloud storage cp`, the feed last with
-  `--cache-control=no-store`.
-- Unlike S3, overwriting an object needs `storage.objects.delete`, so the role is
-  `roles/storage.objectUser` rather than `objectCreator`, under the same condition.
+**Google Cloud Storage** in place of S3 follows `ci-cloud-oidc` (the `ci` plugin): the channel's
+environment principal itself holds `roles/storage.objectUser` on the channel's folder and a
+bucket-wide list role, with no service account and no key, and the publish job uploads with
+`gcloud storage cp`, the feed last with `--cache-control=no-store`.
 
 ## Porting
 

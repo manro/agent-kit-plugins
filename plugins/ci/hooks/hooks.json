@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '%s\\n' 'Agent Kit ci. For GitHub Actions workflows use ci-github-actions; for a workflow that reaches AWS or GCP, and the cloud roles it assumes, use ci-cloud-oidc. Follow the runners, environments, and infrastructure tool the repository already uses.'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
