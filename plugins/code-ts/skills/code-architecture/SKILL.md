@@ -703,7 +703,8 @@ changes. Code: [references/workers.md](references/workers.md).
 A README is written for people: someone who has not seen the package learns what it is for, how its
 parts fit, and how it is checked, in plain words. A diagram helps them more than a list does when
 the parts depend on each other or data moves through steps: add one simple Mermaid diagram, a few
-nodes, of the dependencies or the flow; a package a table explains needs none.
+nodes, of the dependencies or the flow; a package a table explains needs none. Words and diagrams
+follow `visual-explain` where it is installed.
 
 - **Lib** — `# @<scope>/lib-<folder>`, then one paragraph on what it gives the apps; a table of
   barrel keys and what each holds; a short usage snippet; who uses it, what it depends on, and

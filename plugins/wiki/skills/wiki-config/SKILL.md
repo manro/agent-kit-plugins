@@ -89,7 +89,8 @@ instructions point at. With none, create one; with one, improve it.
    vault's own; it is never a gap.
 3. Apply only the numbers the user picks. Add a missing schema section from the template, adapted to
    the vault's folders and names; never rewrite or remove the vault's own text or pages.
-4. Append `## [<today>] update | Vault config updated` to the log, listing what changed.
+4. Append `## [<today>] update | Vault config updated` to the vault's `log.md`, or to the log the
+   schema names for vault-wide changes, listing what changed.
 5. Run the `wiki-lint` skill and fix every failure the change caused.
 
 ## Rules

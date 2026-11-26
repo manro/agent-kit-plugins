@@ -73,17 +73,22 @@ pages, and a page with none is fine. Captures, indexes, and the log carry none.
 `## [YYYY-MM-DD] <op> | <title>`, with any detail in a paragraph under it. `<op>` is a short
 lowercase verb: `create`, `ingest`, `update`, `supersede`, `move`, `drop`. Past entries are never
 reordered or reworded; the one edit they take is a link target: a moved page's new path, or plain
-text for a dropped page.
+text for a dropped page. A vault that keeps one log per area names each log here; an area this
+section gives no log gets no entry.
 
 ## Ingest, query, lint
 
 - **Ingest** (the `wiki-ingest` skill): save the source to `raw/`, write or update the page that
-  cites it, list the page in its topic `index.md`, and append a log entry.
+  cites it, list the page in its topic `index.md`, and append a log entry. A vault that keeps a
+  recurring series, such as a meeting, as a ledger names here the sources that go to one and the
+  ledgers' folder; each occurrence then becomes a dated section of its series' ledger, with no
+  capture.
 - **Query** (the `wiki-maintenance` skill, with every other change to pages): answer from the pages
   and cite them. When the answer will be asked again, file it back as a page or an update, so the
   next query is cheaper.
 - **Lint**: run the `wiki-lint` skill after every change. It checks page names and frontmatter,
-  links, orphans, uncited captures, and log headings{{line-width-note}}.
+  links, orphans, uncited captures, and log headings{{line-width-note}}. A vault with its own linter
+  names its command here, and the skill runs that instead.
 
 ## Provenance and supersede
 

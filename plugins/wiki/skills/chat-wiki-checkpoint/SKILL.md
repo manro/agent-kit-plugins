@@ -18,7 +18,7 @@ skill's job.
 
 - The vault's chat profiles: one profile, their index, and on first use the template and the schema
   section.
-- The vault's `log.md`, and the repository home of any rule or unfinished work the chat leaves.
+- The profiles' log, and the repository home of any rule or unfinished work the chat leaves.
 
 ## Repository facts
 
@@ -29,6 +29,8 @@ Read these before writing:
 - **Where profiles live**: what the vault's `WIKI.md` or the root agent instructions declare for
   chat profiles: the folder, template, index, frontmatter, and sections. A declaration wins over
   this skill wherever they differ; without one, [§ Default layout](#default-layout) applies.
+- **The profiles' log**: the log the vault's schema names for chat profiles: the vault's `log.md`,
+  unless the schema names a log per area; then none when it gives profiles no log.
 - **Where rules and work go**: the homes the root agent instructions name for rules, plans, and
   tasks.
 
@@ -53,7 +55,7 @@ confirmation as the profile:
    `index.md`, and a `chats/` line in the topic list under `WIKI.md` § Layout.
 4. With no declaration, the section in `assets/wiki-section.md`, added to `WIKI.md`: it declares
    where profiles live, so later runs and other readers follow it.
-5. The log entry `## [<today>] create | Chat profiles`.
+5. The log entry `## [<today>] create | Chat profiles`, when the profiles have a log.
 
 ## Profile
 
@@ -112,8 +114,8 @@ past 100 lines it holds detail that belongs in the files it links.
 6. Add or update the profile's index row: `| [<title>](chats/<slug>.md) | <status> | <updated> |`.
 7. Show the profile diff, the set-up files, and every other file to change, and ask once.
 8. Write, append `## [<today>] create | <title> chat profile` for a new profile or `update` for a
-   changed one, and run the `wiki-lint` skill, fixing its failures. A file outside the vault gets
-   the repository's own checks.
+   changed one to the profiles' log when they have one, and run the `wiki-lint` skill, fixing its
+   failures. A file outside the vault gets the repository's own checks.
 
 ## Rules
 

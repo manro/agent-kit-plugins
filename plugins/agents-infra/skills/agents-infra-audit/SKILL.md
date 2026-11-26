@@ -28,8 +28,10 @@ Read these from the repository before running; each is a flag.
 - **Always-loaded docs** beyond `AGENTS.md` and `CLAUDE.md`: what `AGENTS.md` says every task loads.
 - **The Markdown line limit**: what `AGENTS.md` states, else `.editorconfig` `max_line_length` for
   `[*]` or `[*.md]`; none means no `--line-limit`.
-- **Conventions it does not hold**: a repository whose skills may carry dates, or with no line
-  limit, switches that check off.
+- **Conventions it does not hold**: a check the repository's rules do not keep, such as no dates in
+  skills, is off; one that holds for only some paths is off for the others. A repository whose own
+  command runs this script keeps the switches in that command. One with checks of its own runs them
+  after this script, which keeps the shared ones.
 
 ## Run
 
@@ -39,40 +41,44 @@ From the repository root, with Node 22 or later:
 node <this skill's folder>/scripts/dist/agents-infra-audit.run.mjs --plain [--router <router file>]
 ```
 
-| Flag                 | Default          | Meaning                                               |
-| -------------------- | ---------------- | ----------------------------------------------------- |
-| `--root`             | `.`              | Repository root                                       |
-| `--agents-dir`       | `.agents`        | Agent docs, with skills in its `skills/`              |
-| `--links-dir`        | `.claude/skills` | Claude Code skill links                               |
-| `--router`           | none             | Skill router file; without it the router check skips  |
-| `--always-loaded`    | none             | One more always-loaded doc for the budget; repeatable |
-| `--line-limit`       | none             | Markdown line limit; without it no line is too long   |
-| `--mcp-template`     | the usual three  | A template to compare; repeatable                     |
-| `--no-skill-history` | off              | Allow dates, ADR records, and months in skills        |
-| `--no-mcp-templates` | off              | Skip the template comparison                          |
+| Flag              | Default          | Meaning                                               |
+| ----------------- | ---------------- | ----------------------------------------------------- |
+| `--root`          | `.`              | Repository root                                       |
+| `--agents-dir`    | `.agents`        | Agent docs, with skills in its `skills/`              |
+| `--links-dir`     | `.claude/skills` | Claude Code skill links                               |
+| `--router`        | none             | Skill router file; without it the router check skips  |
+| `--always-loaded` | none             | One more always-loaded doc for the budget; repeatable |
+| `--line-limit`    | none             | Markdown line limit; without it no line is too long   |
+| `--mcp-template`  | the usual three  | A template to compare; repeatable                     |
+| `--off`           | none             | A check to turn off, by name; repeatable              |
+
+`--off <name>` turns a check off, and `--off <name>=<glob>` only for the repo paths the glob matches
+and the files under them: `*` stays within one folder, a `**` segment spans any; quote a glob so the
+shell leaves it alone. A name the table does not list is a usage error.
 
 The usual MCP templates are `.mcp.json.example`, `.cursor/mcp.json.example`, and
 `.codex/config.toml.example`; the comparison runs when two or more exist.
 
 ## What it checks
 
-Every check is a failure unless the table says otherwise. The audited Markdown is `AGENTS.md`,
-`CLAUDE.md`, and every `.md` file under the agents folder.
+Every check is a failure unless the table says otherwise, and each finding ends with its name in
+brackets. The audited Markdown is `AGENTS.md`, `CLAUDE.md`, and every `.md` file under the agents
+folder.
 
-| Check                                                                                      | Off with             |
-| ------------------------------------------------------------------------------------------ | -------------------- |
-| A backticked `.agents/…`, `AGENTS.md`, or `CLAUDE.md` path exists; `<x>`, `*`, `{}` skip   | —                    |
-| A Markdown link resolves: `/` from the root, else from the file; URLs and anchors skip     | —                    |
-| `SKILL.md` frontmatter: `name` equals the folder, lowercase-hyphen, at most 64 chars       | —                    |
-| `SKILL.md` frontmatter: a `description` of at most 1024 chars                              | —                    |
-| Skill folder names are unique                                                              | —                    |
-| The router lists each skill by name or namespaced path in backticks, or a local skill link | no `--router`        |
-| Each link in the links folder resolves to the skill of its name; no real folder shadows    | —                    |
-| A link named like no skill holds a skill folder outside the skills folder (it stays)       | —                    |
-| A skill with no link in an existing links folder (warning)                                 | —                    |
-| A house `SKILL.md` names no date, ADR record, or month and year; vendored skills skip      | `--no-skill-history` |
-| No Markdown line runs past the limit where it could wrap                                   | no `--line-limit`    |
-| Every MCP template declares the same servers                                               | `--no-mcp-templates` |
+| Check                                                                                      | Name                | Also off with     |
+| ------------------------------------------------------------------------------------------ | ------------------- | ----------------- |
+| A backticked `.agents/…`, `AGENTS.md`, or `CLAUDE.md` path exists; `<x>`, `*`, `{}` skip   | `path-ref`          | —                 |
+| A Markdown link resolves: `/` from the root, else from the file; URLs and anchors skip     | `link`              | —                 |
+| `SKILL.md` frontmatter: `name` equals the folder, lowercase-hyphen, at most 64 chars       | `skill-name`        | —                 |
+| `SKILL.md` frontmatter: a `description` of at most 1024 chars                              | `skill-description` | —                 |
+| Skill folder names are unique                                                              | `skill-unique`      | —                 |
+| The router lists each skill by name or namespaced path in backticks, or a local skill link | `router`            | no `--router`     |
+| Each link in the links folder resolves to the skill of its name; no real folder shadows    | `skill-link`        | —                 |
+| A link named like no skill holds a skill folder outside the skills folder (it stays)       | `skill-link`        | —                 |
+| A skill with no link in an existing links folder (warning)                                 | `skill-unlinked`    | —                 |
+| A house `SKILL.md` names no date, ADR record, or month and year; vendored skills skip      | `skill-history`     | —                 |
+| No Markdown line runs past the limit where it could wrap                                   | `line-width`        | no `--line-limit` |
+| Every MCP template declares the same servers                                               | `mcp-templates`     | —                 |
 
 Fenced code and inline code hold examples, not links; frontmatter holds no links. A skill is
 vendored when its frontmatter has `license:` or its body a `## License` section.

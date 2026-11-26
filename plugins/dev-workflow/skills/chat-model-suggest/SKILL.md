@@ -18,6 +18,12 @@ whether a chat runs on too strong or too weak a model.
 Activity-triggered. Reads the chat, the plans and skills it names, and the context usage the client
 reports. Writes only the `tier` and `effort` fields of the chat's profile, after the user's yes.
 
+## Repository facts
+
+- **Its checkpoint and resume commands**: what the vault's chat-profile section or the root agent
+  instructions name for saving and restoring a chat; else the `chat-wiki-checkpoint` and
+  `chat-wiki-resume` skills when installed.
+
 ## Inputs
 
 - Nothing: the conversation so far, its goal, what is done, and what is left.
@@ -68,8 +74,7 @@ from the repository's delegation rules where it has them.
    - **now**, when the context is small or most of the work is left;
    - **at a phase boundary**, naming the phase;
    - **a fresh chat**, when the context is large and the rest is a different kind of work: through
-     the `chat-wiki-checkpoint` and `chat-wiki-resume` skills when installed, else a short hand-off
-     the user pastes into the new chat;
+     the checkpoint and resume commands, else a short hand-off the user pastes into the new chat;
    - **stay**, when the gain is smaller than the re-read.
 5. **Report** the current model, effort, and context use in one line; a table of phase, runner, tier
    and model, effort, and the reason; the switch line; then ask whether to apply. At most ten lines
@@ -80,8 +85,9 @@ from the repository's delegation rules where it has them.
      Cursor's model picker, with the effort to set beside it.
    - **Profile**: when the chat has a profile per `chat-wiki-checkpoint` (it was restored from one,
      or one matches its purpose), set its `tier` and `effort` to this chat's main phase, then finish
-     as `chat-wiki-checkpoint` § Workflow does: `updated`, the index row, the log entry, and the
-     `wiki-lint` run. With no profile, say so and offer `chat-wiki-checkpoint` when installed.
+     as `chat-wiki-checkpoint` § Workflow does: `updated`, the index row, the log entry where the
+     profiles have a log, and the `wiki-lint` run. With no profile, say so and offer the checkpoint
+     command.
 
 ## Rules
 

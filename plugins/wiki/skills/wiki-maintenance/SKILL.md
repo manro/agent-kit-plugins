@@ -16,13 +16,15 @@ schema are `wiki-config`'s.
 
 ## Scope
 
-- The vault's pages, topic indexes, and `log.md`. Captures in `raw/` are read, never edited.
+- The vault's pages, topic indexes, and logs. Captures in `raw/` are read, never edited.
 
 ## Operations
 
 Read the vault's `WIKI.md` first and follow its schema for any write. A question or review is
 read-only unless the user asks to save an answer or apply an edit. After a write, add
-`## [<today>] <op> | <title>` to the log and run `wiki-lint` for the changes.
+`## [<today>] <op> | <title>` to the log the schema names for the area written: the vault's
+`log.md`, unless the schema names a log per area; then none for an area it gives no log. Then run
+`wiki-lint` for the changes.
 
 | Operation | Steps                                                                                     | Op          |
 | --------- | ----------------------------------------------------------------------------------------- | ----------- |
