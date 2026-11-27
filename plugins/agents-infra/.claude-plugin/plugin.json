@@ -1,6 +1,6 @@
 {
   "name": "agents-infra",
-  "version": "0.30.0",
+  "version": "0.31.0",
   "description": "Agent infrastructure for repositories: audit AGENTS.md, skills, and MCP templates, and link skills for Claude Code.",
   "hooks": "./hooks/claude-skill-links.json",
   "author": {
