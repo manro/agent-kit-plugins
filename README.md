@@ -2,7 +2,7 @@
 
 Skills for Claude Code, Codex, and Cursor, published as the `agent-kit` plugin marketplace. Each
 plugin serves one kind of repository, so a repository enables only the skills that apply to it. This
-page describes release `v0.30.0`.
+page describes release `v0.31.0`.
 
 | Plugin         | For                                                                | Skills |
 | -------------- | ------------------------------------------------------------------ | -----: |
@@ -31,7 +31,8 @@ separate source repository, so this repository takes no pull requests.
 - `visual-explain`: explains a design, flow, or trend in few words, and draws a Mermaid diagram or
   chart only when the reader must hold three or more connected parts.
 - `agent-kit-install`: turns on auto-update for this marketplace in Claude Code and updates the
-  installed plugins now; in Codex, refreshes the marketplace.
+  installed plugins now, or with `--all` installs the missing ones too; in Codex, refreshes the
+  marketplace.
 - `ponytail`: pushes toward the simplest solution that works. From
   [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail), MIT.
 - `stop-slop`: strips AI writing tells from prose. From
@@ -110,7 +111,7 @@ codex plugin add ci@agent-kit
 
 Cursor imports the plugins installed in Claude Code.
 
-To hold one version, use its tag, such as `v0.30.0`, in place of `release`.
+To hold one version, use its tag, such as `v0.31.0`, in place of `release`.
 
 A repository that enables plugins for everyone who opens it registers the marketplace in its
 `.claude/settings.json` and lists the plugins it needs:
@@ -143,10 +144,10 @@ and the conventions the clients share, and ask when neither answers.
 
 Claude Code auto-updates only Anthropic's marketplaces unless told otherwise, and `/reload-plugins`
 loads only what is already on disk. Ask for `agent-kit-install` once: it sets `autoUpdate` on this
-marketplace in the user settings and updates the installed plugins now. Later releases then arrive
-during a session and load at the next launch or on `/reload-plugins`. A Claude desktop app session
-may run with `DISABLE_AUTOUPDATER` set, which skips that pass; the skill's `--force-plugin-updates`
-keeps plugin updates on there.
+marketplace in the user settings and updates the installed plugins now; with `--all` it also
+installs the plugins not installed yet. Later releases then arrive during a session and load at the
+next launch or on `/reload-plugins`. A Claude desktop app session may run with `DISABLE_AUTOUPDATER`
+set, which skips that pass; the skill's `--force-plugin-updates` keeps plugin updates on there.
 
 By hand, in Claude Code:
 
