@@ -2,11 +2,11 @@
 
 Skills for Claude Code, Codex, and Cursor, published as the `agent-kit` plugin marketplace. Each
 plugin serves one kind of repository, so a repository enables only the skills that apply to it. This
-page describes release `v0.27.0`.
+page describes release `v0.28.0`.
 
 | Plugin         | For                                                                | Skills |
 | -------------- | ------------------------------------------------------------------ | -----: |
-| `dev-workflow` | Any repository                                                     |      9 |
+| `dev-workflow` | Any repository                                                     |     10 |
 | `code-ts`      | TypeScript repositories, React and Electron apps included          |      9 |
 | `wiki`         | Repositories that keep a Markdown knowledge base                   |      6 |
 | `agents-infra` | Repositories with agent rules in `AGENTS.md` and `.agents/skills/` |      2 |
@@ -20,14 +20,16 @@ separate source repository, so this repository takes no pull requests.
 
 `dev-workflow`:
 
-- `architect-review`: reviews architecture and technology choices, and reports only critical
-  pitfalls, each with evidence, the smallest correction, and a simple Mermaid diagram.
+- `architect-review`: reviews architecture and designs in plans, pull requests, and repositories,
+  and reports only critical pitfalls as what, effect, and the smallest fix, ready to post on GitHub.
 - `chat-model-suggest`: suggests a model tier and effort for the rest of a chat's work, per phase.
 - `chat-title`: names chats by group and kind, and renames them where the client allows.
 - `code-annotation`: keeps only the code comments that name the bug their absence invites.
 - `commit-message`: writes a 5-7 word commit subject without changing Git state.
 - `pr-description`: writes or updates a pull request's title and description for reviewers.
 - `session-lessons`: proposes a session's generic decisions and corrections as short rules.
+- `visual-explain`: explains a design, flow, or trend in few words, and draws a Mermaid diagram or
+  chart only when the reader must hold three or more connected parts.
 - `ponytail`: pushes toward the simplest solution that works. From
   [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail), MIT.
 - `stop-slop`: strips AI writing tells from prose. From
@@ -54,8 +56,10 @@ separate source repository, so this repository takes no pull requests.
 
 - `wiki-config`: creates a vault of captures in `raw/` and topic pages that cite them, or lists an
   existing vault's gaps against that template; it stays plain Markdown and opens in Obsidian.
-- `wiki-ingest`: captures a URL, file, or pasted text and writes or updates the page that cites it.
-- `wiki-lint`: checks page names, frontmatter, links, orphans, uncited captures, and line width.
+- `wiki-ingest`: captures a URL, file, or pasted text and writes or updates the page that cites it,
+  or a dated section in a series ledger.
+- `wiki-lint`: checks page names, frontmatter, links, orphans, uncited captures, and line width; a
+  vault turns a check off by name, or for some paths only.
 - `wiki-maintenance`: answers from the pages, and updates, moves, merges, and drops pages.
 - `chat-wiki-checkpoint`: saves a recurring chat's setup as a profile page in the vault.
 - `chat-wiki-resume`: restores a chat from its profile and briefs the user before any work.
@@ -63,7 +67,8 @@ separate source repository, so this repository takes no pull requests.
 `agents-infra`:
 
 - `agents-infra-audit`: checks the agent docs' paths and links, skill frontmatter and names, MCP
-  templates, and line length, and prints the token budget and its change.
+  templates, and line length, and prints the token budget and its change; a repository turns a check
+  off by name, or for some paths only.
 - `claude-skill-links`: links each skill in `.agents/skills/` into `.claude/skills/`, and its Claude
   Code hook creates the links folder at startup.
 
@@ -102,7 +107,7 @@ codex plugin add ci@agent-kit
 
 Cursor imports the plugins installed in Claude Code.
 
-To hold one version, use its tag, such as `v0.27.0`, in place of `release`.
+To hold one version, use its tag, such as `v0.28.0`, in place of `release`.
 
 A repository that enables plugins for everyone who opens it registers the marketplace in its
 `.claude/settings.json` and lists the plugins it needs:
