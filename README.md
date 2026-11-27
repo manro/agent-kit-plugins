@@ -2,11 +2,11 @@
 
 Skills for Claude Code, Codex, and Cursor, published as the `agent-kit` plugin marketplace. Each
 plugin serves one kind of repository, so a repository enables only the skills that apply to it. This
-page describes release `v0.28.0`.
+page describes release `v0.30.0`.
 
 | Plugin         | For                                                                | Skills |
 | -------------- | ------------------------------------------------------------------ | -----: |
-| `dev-workflow` | Any repository                                                     |     10 |
+| `dev-workflow` | Any repository                                                     |     11 |
 | `code-ts`      | TypeScript repositories, React and Electron apps included          |      9 |
 | `wiki`         | Repositories that keep a Markdown knowledge base                   |      6 |
 | `agents-infra` | Repositories with agent rules in `AGENTS.md` and `.agents/skills/` |      2 |
@@ -30,6 +30,8 @@ separate source repository, so this repository takes no pull requests.
 - `session-lessons`: proposes a session's generic decisions and corrections as short rules.
 - `visual-explain`: explains a design, flow, or trend in few words, and draws a Mermaid diagram or
   chart only when the reader must hold three or more connected parts.
+- `agent-kit-install`: turns on auto-update for this marketplace in Claude Code and updates the
+  installed plugins now; in Codex, refreshes the marketplace.
 - `ponytail`: pushes toward the simplest solution that works. From
   [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail), MIT.
 - `stop-slop`: strips AI writing tells from prose. From
@@ -69,8 +71,9 @@ separate source repository, so this repository takes no pull requests.
 - `agents-infra-audit`: checks the agent docs' paths and links, skill frontmatter and names, MCP
   templates, and line length, and prints the token budget and its change; a repository turns a check
   off by name, or for some paths only.
-- `claude-skill-links`: links each skill in `.agents/skills/` into `.claude/skills/`, and its Claude
-  Code hook creates the links folder at startup.
+- `claude-skill-links`: links each skill in `.agents/skills/` into `.claude/skills/`, except where
+  git keeps the skill and would show its link in `git status`; its Claude Code hook syncs the links
+  at startup.
 
 `ci`:
 
@@ -107,7 +110,7 @@ codex plugin add ci@agent-kit
 
 Cursor imports the plugins installed in Claude Code.
 
-To hold one version, use its tag, such as `v0.28.0`, in place of `release`.
+To hold one version, use its tag, such as `v0.30.0`, in place of `release`.
 
 A repository that enables plugins for everyone who opens it registers the marketplace in its
 `.claude/settings.json` and lists the plugins it needs:
@@ -116,7 +119,8 @@ A repository that enables plugins for everyone who opens it registers the market
 {
   "extraKnownMarketplaces": {
     "agent-kit": {
-      "source": { "source": "github", "repo": "manro/agent-kit-plugins", "ref": "release" }
+      "source": { "source": "github", "repo": "manro/agent-kit-plugins", "ref": "release" },
+      "autoUpdate": true
     }
   },
   "enabledPlugins": { "dev-workflow@agent-kit": true, "code-ts@agent-kit": true }
@@ -134,3 +138,25 @@ Each plugin adds a short startup hint on when to use its skills. In Codex, trust
 
 agent-kit keeps nothing of its own in a repository: skills read what they need from its `AGENTS.md`
 and the conventions the clients share, and ask when neither answers.
+
+## Update
+
+Claude Code auto-updates only Anthropic's marketplaces unless told otherwise, and `/reload-plugins`
+loads only what is already on disk. Ask for `agent-kit-install` once: it sets `autoUpdate` on this
+marketplace in the user settings and updates the installed plugins now. Later releases then arrive
+during a session and load at the next launch or on `/reload-plugins`. A Claude desktop app session
+may run with `DISABLE_AUTOUPDATER` set, which skips that pass; the skill's `--force-plugin-updates`
+keeps plugin updates on there.
+
+By hand, in Claude Code:
+
+```sh
+claude plugin marketplace update agent-kit
+claude plugin update dev-workflow@agent-kit
+```
+
+In Codex, which runs the plugins from the marketplace's copy:
+
+```sh
+codex plugin marketplace upgrade agent-kit
+```
