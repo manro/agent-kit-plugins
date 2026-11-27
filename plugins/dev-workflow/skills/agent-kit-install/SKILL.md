@@ -15,17 +15,22 @@ why a release is not loaded. Claude Code updates a marketplace that is not Anthr
 asked, and `/reload-plugins` only loads what is already on disk, so a new release never arrives on
 its own until auto-update is on.
 
-## Claude Code
+## Run
 
-Run from the project root, with Node 22 or later, only on the user's request: it changes their user
-settings and their installed plugins.
+Run from the project root, with Node 22 or later, only on the user's request: it changes the user's
+settings and installed plugins in Claude Code and Codex.
 
 ```bash
 node <this skill's folder>/scripts/dist/agent-kit-install.run.mjs
 ```
 
-1. Finds the `agent-kit` marketplace in `claude plugin marketplace list`; one Claude Code does not
-   know fails the run with the command that adds it.
+Each client runs when its command, `claude` or `codex`, is on PATH, and is skipped otherwise;
+neither on PATH fails the run. A client that does not know the `agent-kit` marketplace fails the run
+with the command that adds it, after the other client's part.
+
+## Claude Code
+
+1. Finds the `agent-kit` marketplace in `claude plugin marketplace list`.
 2. Sets `autoUpdate: true` on its `extraKnownMarketplaces` entry in the user settings,
    `~/.claude/settings.json` or `$CLAUDE_CONFIG_DIR/settings.json`. A missing entry is added with
    the source Claude Code already knows; an existing one keeps its source, a pinned `ref` included.
@@ -55,6 +60,18 @@ A client can set one for its own updates: a Claude desktop app session may run w
 keeps plugin auto-update on for every marketplace whose auto-update is on, and leaves Claude Code's
 own updates off.
 
+## Codex
+
+1. Runs `codex plugin marketplace upgrade agent-kit`. Codex runs each installed plugin from that
+   snapshot (`codex plugin list` shows the path), so the next Codex session loads the new versions.
+2. With `--all`, adds each plugin of the marketplace Codex has not installed:
+   `codex plugin add <id>`.
+3. Prints each plugin's version before and after, and each one it added, after `codex:`.
+
+The script sets nothing in Codex's config; rerunning it pulls a later release.
+
+## Flags
+
 | Flag                     | Default | Meaning                                                  |
 | ------------------------ | ------- | -------------------------------------------------------- |
 | `--all`                  | off     | Also install the marketplace's plugins not installed yet |
@@ -62,22 +79,14 @@ own updates off.
 | `--force-plugin-updates` | off     | Also set `FORCE_AUTOUPDATE_PLUGINS=1` in the settings    |
 | `--log-level`            | `info`  | `error` hides the warning about a variable that stops it |
 
-| Exit | Meaning                                                                        |
-| ---- | ------------------------------------------------------------------------------ |
-| 0    | Settings current and plugins updated, or `--check` found them current          |
-| 1    | Unknown marketplace, settings that hold no object there, or a `claude` failure |
-| 2    | `--check` found a setting to change, or with `--all` a plugin to install       |
+| Exit | Meaning                                                                   |
+| ---- | ------------------------------------------------------------------------- |
+| 0    | Settings current and plugins updated, or `--check` found them current     |
+| 1    | Neither client, an unknown marketplace, bad settings, or a failed command |
+| 2    | `--check` found a setting to change, or with `--all` a plugin to install  |
 
 The run never passes `-y`: a marketplace that declares its own install command stops the update for
 the user to confirm in a terminal. One more plugin installs with
-`claude plugin install <plugin>@agent-kit`. `--check --all` reads the plugins to install from the
-local copy of the marketplace, so a plugin the next release adds shows only in the real run.
-
-## Codex
-
-The script changes nothing in Codex. Its agent-kit plugins run from the marketplace's snapshot
-(`codex plugin list` shows the path), so refreshing the snapshot updates them for the next session:
-
-```bash
-codex plugin marketplace upgrade agent-kit
-```
+`claude plugin install <plugin>@agent-kit`, or `codex plugin add <plugin>@agent-kit`.
+`--check --all` reads the plugins to install from the local copy of the marketplace in each client,
+so a plugin the next release adds shows only in the real run.
