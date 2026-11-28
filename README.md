@@ -22,7 +22,7 @@ separate source repository, so this repository takes no pull requests.
 
 - `architect-review`: reviews what a pull request, branch, or plan brings in, or a wider area when
   asked, and reports only critical issues, blockers first, as what, effect, and a fix tip that needs
-  verification, each blocker with a diagram of its failure beside its fix, ready to post on GitHub.
+  verification, drawing a blocker's failure beside its proposed fix, ready to post on GitHub.
 - `chat-model-suggest`: suggests a model tier and effort for the rest of a chat's work, per phase.
 - `chat-title`: names chats by group and kind, and renames them where the client allows.
 - `code-annotation`: keeps only the code comments that name the bug their absence invites.
