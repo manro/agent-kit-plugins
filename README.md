@@ -2,7 +2,7 @@
 
 Skills for Claude Code, Codex, and Cursor, published as the `agent-kit` plugin marketplace. Each
 plugin serves one kind of repository, so a repository enables only the skills that apply to it. This
-page describes release `v0.33.0`.
+page describes release `v0.35.0`.
 
 | Plugin         | For                                                                | Skills |
 | -------------- | ------------------------------------------------------------------ | -----: |
@@ -43,7 +43,8 @@ separate source repository, so this repository takes no pull requests.
 
 - `code-standards`: classes with private state, names, constructors, layout, composition, typed
   events and errors; with a naming checker.
-- `code-architecture`: package boundaries, layers, composition roots, state, and validation.
+- `code-architecture`: package boundaries, layers, composition roots, scripted pipelines, state, and
+  validation.
 - `code-unit-tests-architecture`: `node:test` suites that mirror `src/`, typed fakes, temp folders.
 - `code-ops-commands`: commands that change live systems prove access and show their plan before
   they write, confirm by blast radius, and report what changed.
@@ -80,7 +81,8 @@ separate source repository, so this repository takes no pull requests.
 `ci`:
 
 - `ci-github-actions`: least-privilege permissions, pinned actions, event data kept out of scripts,
-  one environment per target, one build that ships, and releases run by hand behind a version gate.
+  one environment per target, checks split into parallel jobs only where timings show it pays, one
+  build that ships, and releases run by hand behind a version gate.
 - `ci-cloud-oidc`: keyless access to AWS and Google Cloud from a workflow, each identity trusted
   from one environment and allowed one folder, with Terraform roles and a `gcloud` setup.
 
@@ -112,7 +114,7 @@ codex plugin add ci@agent-kit
 
 Cursor imports the plugins installed in Claude Code.
 
-To hold one version, use its tag, such as `v0.33.0`, in place of `release`.
+To hold one version, use its tag, such as `v0.35.0`, in place of `release`.
 
 A repository that enables plugins for everyone who opens it registers the marketplace in its
 `.claude/settings.json` and lists the plugins it needs:
