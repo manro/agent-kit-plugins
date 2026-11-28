@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "ci",
-  "version": "0.34.0",
+  "version": "0.35.0",
   "description": "CI workflows and keyless cloud access: GitHub Actions standards and OIDC to AWS and GCP, for Claude Code and Codex.",
   "author": {
     "name": "manro"

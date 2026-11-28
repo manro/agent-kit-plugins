@@ -1,9 +1,9 @@
 ---
 name: code-architecture
 description: >-
-  Architecture standard for TypeScript apps, libraries, and skill scripts: package boundaries,
-  layers, composition roots, state, cancellation, workers, and validation. Use when creating,
-  moving, or reviewing packages or skill scripts, or adding dependencies.
+  Architecture standard for TypeScript apps, libraries, and skill and repository scripts: package
+  boundaries, layers, composition roots, scripted pipelines, state, cancellation, workers, and
+  validation. Use when creating, moving, or reviewing packages or scripts, or adding dependencies.
 ---
 
 # Code Architecture
@@ -27,7 +27,8 @@ skill decides where code lives, which package owns it, and how packages connect.
 **MUST** apply when creating, moving, renaming, or splitting a module, folder, or package of the
 repository (in the default layout, under `src/apps/` or `src/libs/`) or of a skill's `scripts/`;
 adding or moving a dependency; deciding whether code belongs in a skill script, an app, or a lib;
-and reviewing any change in those locations.
+turning a shell script that grew past a few commands into a script package; and reviewing any change
+in those locations.
 
 ## Scope
 
@@ -111,6 +112,30 @@ call for changing it.
 Use `*.run.ts` for TypeScript entry points. Follow the repository's layout for their placement and
 its supported runtime for launching them. When moving an entry point, update its callers and verify
 the normal launch path.
+
+## Scripted pipelines
+
+A repository's own runs (its checks, a release build, smoke tests of what it ships, a setup) start
+as a few shell lines and grow. Shell stays right while a person reads it at a glance; past that, no
+one can say what a run does or in what order.
+
+- **A shell script stays a few commands in a row**: clear a folder, copy a tree, call the build.
+  Once it holds named steps, branches, loops over files it finds, temporary fixtures, assertions, or
+  values read out of JSON, it becomes a script package laid out like an app
+  ([§ Package anatomy](#package-anatomy)), with suites.
+- **One plan module lists the whole run**: each part and its steps in order, each step one command
+  or one call under a title a person reads (`names in scripts/validate`). That file alone says what
+  the run does; nothing else adds, reorders, or drops a step, and what the plan reads from the
+  checkout (the paths a pattern matches, the release version) reaches it as values.
+- **One runner runs every step**: it prints the step's title and command before it starts, shows the
+  command's own output as it comes, then how the step ended and how long it took. It stops at the
+  first failure and ends with each part's time. A step that cannot run here, such as a tool CI
+  lacks, is listed as skipped with its reason, never dropped in silence.
+- **Parts and shards are chosen by flag** (`--part test:2/3`), so a CI job per part
+  (`ci-github-actions` § Parallel checks), a developer rerunning one part, and the pre-commit hook
+  all call the same script.
+- **Its suites run the plan, the choice of parts, and the runner over fakes**; the repository's own
+  run of the script is the real run of its adapters.
 
 ## Dependency direction
 
@@ -776,6 +801,8 @@ when a README draws; `visual-explain`, where it is installed, says how to write 
 - In a package: one default export per module (the value itself when there is one), types in the
   module's `declare module` block, nothing read from the barrel at module scope, and the barrel
   `as const`.
+- A shell script past a few commands in a row is a script package: one plan module lists its steps,
+  and one runner prints each as it runs.
 - A move or refactor shows its baseline diff.
 - A new package passes the checks and appears in the repository's architecture doc.
 - Its tests pass the `code-unit-tests-architecture` § Review checklist.

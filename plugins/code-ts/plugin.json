@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "code-ts",
-  "version": "0.34.0",
+  "version": "0.35.0",
   "description": "TypeScript standards, architecture, tests, ops commands, and lint configs for Claude Code and Codex.",
   "author": {
     "name": "manro"
