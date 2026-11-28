@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "agents-infra",
-  "version": "0.33.0",
+  "version": "0.34.0",
   "description": "Agent infrastructure for repositories: audit AGENTS.md, skills, and MCP templates, and link skills for Claude Code.",
   "author": {
     "name": "manro"

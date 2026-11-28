@@ -1,6 +1,6 @@
 {
   "name": "ci",
-  "version": "0.33.0",
+  "version": "0.34.0",
   "description": "CI workflows and keyless cloud access: GitHub Actions standards and OIDC to AWS and GCP, for Claude Code and Codex.",
   "author": {
     "name": "manro"

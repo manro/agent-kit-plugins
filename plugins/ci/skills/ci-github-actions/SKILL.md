@@ -2,8 +2,9 @@
 name: ci-github-actions
 description: >-
   GitHub Actions standard: least-privilege permissions, pinned actions, event data kept out of
-  scripts, environments that hold secrets, a cheap gate before costly jobs, one build that ships,
-  and releases run by hand as dry runs. Use when writing or reviewing a GitHub Actions workflow.
+  scripts, environments for secrets, a cheap gate first, checks split by timing, one build that
+  ships, and releases run by hand as dry runs. Use when writing or reviewing a GitHub Actions
+  workflow.
 ---
 
 # GitHub Actions
@@ -100,11 +101,44 @@ composite action under `.github/`.
   context (a `pull_request_target` mistake, an injected script) can write a cache that a later
   restore trusts, and a lockfile check does not catch a package store replaced whole. Checks on a
   pull request may cache; a release, and any job that holds a secret, installs from the registry.
-- **Build once, publish what was checked.** The job that runs the checks builds and uploads the
-  artifact; a publish job downloads that artifact and never builds. A reusable workflow
-  (`workflow_call`) holds the build when two release workflows share it.
+- **Build once, publish what was checked.** One job builds, tests the build, and uploads the
+  artifact; a publish job `needs:` it and every check job, downloads that artifact, and never
+  builds. A reusable workflow (`workflow_call`) holds the build when two release workflows share it.
+- **An artifact keeps no file modes and, by default, no dot files.** A tree with an executable or a
+  `.config/` folder ships as a tar packed after its tests and unpacked by the publish job.
 - **Logic longer than a few lines is a script in the repository**, with its own tests, run by the
   step; the workflow wires inputs to it.
+
+## Parallel checks
+
+A run's wall clock is its slowest job, and every job pays its setup again: a runner, the checkout,
+the toolchain, and a cached install take 15 to 20 seconds on a hosted runner. Splitting pays where
+the checks run several times that.
+
+- **Time the run before splitting it.** Read each step's duration from recent runs (the run's jobs
+  API, or its log timestamps per command) and split what is slow, not what looks separable.
+- **Split a job whose checks take minutes; keep one that takes seconds.** Two minutes of checks
+  become four jobs of about half a minute each; forty seconds of checks stay in one job, where a
+  split adds setup, runners, and billed minutes for a few seconds.
+- **One script runs every check, and CI runs its parts.** The script the pre-commit hook and the
+  developer run takes part names and runs all of them when given none; a matrix job passes one part
+  or group per leg, with `fail-fast: false` so one run reports every failing part. CI and the laptop
+  run the same commands, and the workflow spells out no check twice.
+- **Balance the critical path, not one job.** Splitting the slowest job gains only down to the next
+  slowest. Group the short parts, split the long ones, and stop once no check job outlasts the part
+  that cannot split, usually the build.
+- **Shard a part only when, split out, it alone holds the run, and it uses every CPU.** A hosted
+  runner has 2 vCPUs for a private repository and 4 for a public one; a job that keeps them busy
+  gains nothing from more processes, only from more jobs. Shard with the test runner's own option
+  (`--shard i/n` in Jest, Vitest, and Playwright; `--test-shard` in Node), not a hand-kept file
+  list, and check that the shards' test counts add up to the whole suite: a flag passed where the
+  runner ignores it runs every test in every shard.
+- **No shard finishes before its largest file.** When one test file holds most of a suite's time,
+  splitting that file or making it faster gains more than another shard.
+- **Choose the fewest shards that keep every job under the build's time.** Each job takes a slot of
+  the account's concurrent jobs, and a private repository's minutes are billed per job, each rounded
+  up to a whole minute: ten jobs of forty seconds bill ten minutes, one three-minute job bills
+  three.
 
 ## Releases
 
@@ -139,5 +173,7 @@ composite action under `.github/`.
 - Cheap checks first; a timeout on every job; missing settings named; concurrency per target.
 - One build, published as checked, with no cache restored; a version gate that reads 403 as nothing
   only on a first release; a dry run by default; the pointer last.
+- Checks split into jobs only where timings show it, from the script developers run; shards from the
+  test runner's own option, their counts adding up; publish needs every job.
 - `id-token: write` only on a job that installs and builds nothing.
 - Scripts with tests; actionlint and ShellCheck clean.
