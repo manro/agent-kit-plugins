@@ -2,7 +2,7 @@
 
 Skills for Claude Code, Codex, and Cursor, published as the `agent-kit` plugin marketplace. Each
 plugin serves one kind of repository, so a repository enables only the skills that apply to it. This
-page describes release `v0.32.0`.
+page describes release `v0.33.0`.
 
 | Plugin         | For                                                                | Skills |
 | -------------- | ------------------------------------------------------------------ | -----: |
@@ -20,8 +20,9 @@ separate source repository, so this repository takes no pull requests.
 
 `dev-workflow`:
 
-- `architect-review`: reviews architecture and designs in plans, pull requests, and repositories,
-  and reports only critical pitfalls as what, effect, and the smallest fix, ready to post on GitHub.
+- `architect-review`: reviews what a pull request, branch, or plan brings in, or a wider area when
+  asked, and reports only critical issues, blockers first, as what, effect, and a fix tip that needs
+  verification, each blocker with a diagram of its failure beside its fix, ready to post on GitHub.
 - `chat-model-suggest`: suggests a model tier and effort for the rest of a chat's work, per phase.
 - `chat-title`: names chats by group and kind, and renames them where the client allows.
 - `code-annotation`: keeps only the code comments that name the bug their absence invites.
@@ -29,7 +30,7 @@ separate source repository, so this repository takes no pull requests.
 - `pr-description`: writes or updates a pull request's title and description for reviewers.
 - `session-lessons`: proposes a session's generic decisions and corrections as short rules.
 - `visual-explain`: explains a design, flow, or trend in few words, and draws a Mermaid diagram or
-  chart only when the reader must hold three or more connected parts.
+  chart only when the reader must hold three or more connected parts, or a failure beside its fix.
 - `agent-kit-install`: turns on auto-update for this marketplace in Claude Code and updates the
   installed plugins now, and refreshes the marketplace in Codex, in one run; `--all` also installs
   the plugins either client is missing.
@@ -111,7 +112,7 @@ codex plugin add ci@agent-kit
 
 Cursor imports the plugins installed in Claude Code.
 
-To hold one version, use its tag, such as `v0.32.0`, in place of `release`.
+To hold one version, use its tag, such as `v0.33.0`, in place of `release`.
 
 A repository that enables plugins for everyone who opens it registers the marketplace in its
 `.claude/settings.json` and lists the plugins it needs:
