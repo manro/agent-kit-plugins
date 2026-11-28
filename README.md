@@ -2,15 +2,16 @@
 
 Skills for Claude Code, Codex, and Cursor, published as the `agent-kit` plugin marketplace. Each
 plugin serves one kind of repository, so a repository enables only the skills that apply to it. This
-page describes release `v0.35.0`.
+page describes release `v0.36.0`.
 
-| Plugin         | For                                                                | Skills |
-| -------------- | ------------------------------------------------------------------ | -----: |
-| `dev-workflow` | Any repository                                                     |     11 |
-| `code-ts`      | TypeScript repositories, React and Electron apps included          |      9 |
-| `wiki`         | Repositories that keep a Markdown knowledge base                   |      6 |
-| `agents-infra` | Repositories with agent rules in `AGENTS.md` and `.agents/skills/` |      2 |
-| `ci`           | Repositories whose workflows run on GitHub Actions                 |      2 |
+| Plugin          | For                                                                | Skills |
+| --------------- | ------------------------------------------------------------------ | -----: |
+| `dev-workflow`  | Any repository                                                     |     11 |
+| `code-ts`       | TypeScript repositories, React and Electron apps included          |      9 |
+| `wiki`          | Repositories that keep a Markdown knowledge base                   |      6 |
+| `agents-infra`  | Repositories with agent rules in `AGENTS.md` and `.agents/skills/` |      2 |
+| `ci`            | Repositories whose workflows run on GitHub Actions                 |      2 |
+| `system-design` | Designing systems, services, and the changes between them          |      0 |
 
 The `release` branch holds the marketplace: the two catalogs and the plugins as installed, each
 skill's scripts bundled and ready to run. Each release is tagged `v<version>`. CI builds both from a
@@ -86,6 +87,9 @@ separate source repository, so this repository takes no pull requests.
 - `ci-cloud-oidc`: keyless access to AWS and Google Cloud from a workflow, each identity trusted
   from one environment and allowed one folder, with Terraform roles and a `gcloud` setup.
 
+`system-design` has no skills yet. It will hold only design practice proven in real systems; until
+then, skip it.
+
 ## Install
 
 Skip the plugins a machine never needs.
@@ -99,6 +103,7 @@ claude plugin install code-ts@agent-kit
 claude plugin install wiki@agent-kit
 claude plugin install agents-infra@agent-kit
 claude plugin install ci@agent-kit
+claude plugin install system-design@agent-kit
 ```
 
 Codex CLI:
@@ -110,11 +115,12 @@ codex plugin add code-ts@agent-kit
 codex plugin add wiki@agent-kit
 codex plugin add agents-infra@agent-kit
 codex plugin add ci@agent-kit
+codex plugin add system-design@agent-kit
 ```
 
 Cursor imports the plugins installed in Claude Code.
 
-To hold one version, use its tag, such as `v0.35.0`, in place of `release`.
+To hold one version, use its tag, such as `v0.36.0`, in place of `release`.
 
 A repository that enables plugins for everyone who opens it registers the marketplace in its
 `.claude/settings.json` and lists the plugins it needs:
