@@ -8,10 +8,11 @@ description: >-
 
 # Visual Explain
 
-Explains one thing to someone who has not seen it: a design, a flow, a change, an incident. Skills
-that write for people (`architect-review`, `pr-description`, `code-architecture` § README contract)
-keep their own sections and load this one only when their content passes § When to draw; simple
-content stays plain text. The studies behind each rule are in
+Explains one thing to someone who has not seen it: a design, a flow, a change, an incident. A skill
+that writes for people (`architect-review`, `pr-description`, `code-architecture` § README contract)
+decides by its own rules when to draw, and loads this one for how: the words, the diagram, what
+breaks, and where it is read. § When to draw serves a direct request and a caller that states no
+rule of its own. The studies behind each rule are in
 [references/evidence.md](references/evidence.md).
 
 ## Words
@@ -39,17 +40,22 @@ content stays plain text. The studies behind each rule are in
 ## When to draw
 
 A visual saves effort only when the reader must hold several connected parts at once; for simple or
-step-by-step content it adds reading and nothing else. Take the first that fits:
+step-by-step content it adds reading and nothing else. When no calling skill decides, take the first
+that fits:
 
 1. **One fact, or one or two numbers**: a sentence, `p95 1.2 s, was 3.4 s`.
 2. **Exact values to look up, or up to about 20 numbers with no shape to see**: a table.
-3. **Steps that each follow the last**, with no branch, loop, or second actor: a numbered list.
-4. **Three or more parts that interact**: a diagram.
+3. **A failure and its fix, when the cause and the effect sit in two different parts** (functions,
+   modules, services, or steps of a flow): a flowchart of the trigger, the broken path, and the
+   proposed fix's path beside it. The two paths are the branch, so two parts are enough; a cause and
+   effect inside one function stay in words.
+4. **Steps that each follow the last**, with no branch, loop, or second actor: a numbered list.
+5. **Three or more parts that interact**: a diagram.
    - a flowchart: three or more nodes with a branch, a loop, or several paths in or out;
    - a sequence: two or more actors exchanging three or more messages;
    - a state diagram: three or more states with conditional moves;
    - a chart: enough points that the shape is the message.
-5. **None of these**: words.
+6. **None of these**: words.
 
 The reader moves the bar. Reviewers who know the code need no diagram of a structure that did not
 change; when it changed, draw only the changed part, with the code's names. Newcomers, in a README
@@ -57,7 +63,7 @@ or an onboarding page, gain the most from one diagram of the whole.
 
 ## Diagrams
 
-Only parts that exist, one diagram per point.
+Only parts that exist, or that a plan names, labelled `Proposed`; one diagram per point.
 
 | To show                              | Draw                                           |
 | ------------------------------------ | ---------------------------------------------- |

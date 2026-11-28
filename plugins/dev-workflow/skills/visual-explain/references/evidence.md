@@ -47,6 +47,10 @@ Each line names the finding; follow the link for the method.
   helped both: Lee et al., 2006, in
   [Kalyuga, 2007](https://www.uky.edu/~gmswan3/EDC608/Kalyuga2007_Article_ExpertiseReversalEffectAndItsI.pdf).
   One study in one domain; the rule's other counts are judgment.
+- **A failure beside its fix.** Learners shown two cases side by side find the features that matter
+  better than from one case at a time: Alfieri, Nokes-Yasuda and Schunn, 2013, a meta-analysis of
+  learning through case comparisons. Drawing a defect beside its fix once it spans two parts is
+  judgment built on that; no study measures it in code review.
 - **Experts lose on restated content.** Words plus pictures helped low-knowledge learners by 52-87%
   and high-knowledge ones by 8-15%: [Mayer, 1997](https://www.uky.edu/~gmswan3/544/mayer_1997.pdf);
   a source that makes sense alone makes a second one redundant (Kalyuga, 2007).

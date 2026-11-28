@@ -32,16 +32,16 @@ title and body.
 A reviewer reads from the top and stops once they know enough; what only an agent needs comes last.
 Lines lead with their subject, and words are cut but never facts. A small PR, one area with no
 change in how parts connect, is a title, a summary, and how it was checked, with a screenshot if the
-UI changed: no diagram and no need for `visual-explain`, and a For agents part only when the diff
-does not show where to start. Load that skill only to draw.
+UI changed: no diagram, and a For agents part only when the diff does not show where to start. This
+skill decides when to draw; load `visual-explain` for how.
 
 - **Title**: what changed, short, in the repository's convention.
 - **Summary**: two to four lines on what changes for the people or systems that use it, and why.
   Never a file list or the story of how the work went.
 - **Architecture**, only when the structure or the data flow changed: what moved or flows
   differently. One simple Mermaid diagram of the new shape, only when the change joins three or more
-  parts with a branch, a loop, or several actors (`visual-explain` § When to draw). It draws the
-  changed part with the code's names; parts that did not change need no drawing.
+  parts with a branch, a loop, or several actors. It draws the changed part with the code's names;
+  parts that did not change need no drawing.
 - **Screenshots**, only when the UI changed: one or two of the changed screen, from a real run or
   from the user, never a mockup. `gh` cannot upload images: ask the user to drop them into the PR,
   or use the repository's place for them.
