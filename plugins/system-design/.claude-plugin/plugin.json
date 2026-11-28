@@ -1,0 +1,8 @@
+{
+  "name": "system-design",
+  "version": "0.36.0",
+  "description": "System design from proven practice: designing systems, services, and the changes between them, for Claude Code and Codex.",
+  "author": {
+    "name": "manro"
+  }
+}

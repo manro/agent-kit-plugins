@@ -28,6 +28,11 @@
       "name": "ci",
       "source": "./plugins/ci",
       "description": "CI workflows and keyless cloud access: GitHub Actions standards and OIDC to AWS and GCP, for Claude Code and Codex."
+    },
+    {
+      "name": "system-design",
+      "source": "./plugins/system-design",
+      "description": "System design from proven practice: designing systems, services, and the changes between them, for Claude Code and Codex."
     }
   ],
   "description": "Personal skills and workflows for Claude Code, Codex, and Cursor."

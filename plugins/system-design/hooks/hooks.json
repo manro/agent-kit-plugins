@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '%s\\n' 'Agent Kit system-design. When designing a system, a service, or a change across services, use this plugin'\\''s skills. Follow the repository'\\''s own architecture docs and constraints.'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

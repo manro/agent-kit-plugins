@@ -145,6 +145,9 @@ plan or the repository is answered in the chat or saved where the user asks:
 - **Evidence names its commit** (short SHA), so anyone can repeat the probe. Before posting, check
   that it is still the PR's head (`gh pr view <PR URL> --json headRefOid`); if the PR moved, review
   the new head first.
-- **Posting is the user's call**: show the review in the chat, and post only when asked, from a
-  temporary file outside the reviewed repository: `gh pr comment <PR URL> --body-file <file>`. Never
-  approve, request changes, or resolve threads unless asked.
+- **The chat shows the review word for word as it would be posted**, map, flowcharts, and notes for
+  agents included; only Fine is added after it, and Fine is never posted. Never a summary or a file
+  path in its place: the user sees exactly what would go out before it does.
+- **Posting is the user's call**: post only when asked, from a temporary file outside the reviewed
+  repository: `gh pr comment <PR URL> --body-file <file>`. Never approve, request changes, or
+  resolve threads unless asked.

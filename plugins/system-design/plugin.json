@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "system-design",
+  "version": "0.36.0",
+  "description": "System design from proven practice: designing systems, services, and the changes between them, for Claude Code and Codex.",
+  "author": {
+    "name": "manro"
+  }
+}
