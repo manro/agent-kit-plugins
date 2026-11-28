@@ -1,10 +1,9 @@
 ---
 name: chat-title
 description: >-
-  Names chats as `<group icon> [Group] - <kind icon> Topic`: each group's icon, a topic glyph or a
-  colour square, lines its chats up in the sidebar, and the kind icon marks the kind of work. Use
-  when a chat starts, when naming or renaming a chat, session, or thread, or when asked for chat
-  icons.
+  Names and renames chats as `<group icon> [Group] - <chat icon> Topic`. Completes partial titles
+  using the group's existing icons and applies the finished title where supported. Use when a chat
+  starts or when asked to name, rename, or add icons to chats.
 ---
 
 # Chat titles
@@ -15,35 +14,41 @@ description: >-
 
 - A chat starts and the client lets the agent rename it (first turn only).
 - The agent names a chat, session, or thread it starts for the user.
-- The user asks to name, rename, or add an icon to chats.
+- The user invokes the skill or asks to name, rename, or add an icon to chats.
 
-## Scope
+## Complete the title before applying it
 
-Activity-triggered: chat titles in Claude Code, Cursor, and Codex. No path scope.
+Calling this skill with `[Group] - Topic` asks you to complete and apply the title in this turn.
+Read the group and topic from the input, keep their spelling and case, and fill every missing icon.
+Keep icons the user supplies in their given positions. Use raw text only if the user explicitly asks
+for a verbatim title or a title without icons.
 
-## Repository facts
+Resolve icons in this order:
 
-Read these from the repository before naming:
+1. Use the user's stated convention, then the repository's rules in `AGENTS.md` and its linked docs.
+2. Where those rules are silent, check saved chat profiles (such as their `chat` field) and titles
+   in the same `[Group]` that the client can list. Reuse the group's leading icon. If those titles
+   use the icon after the dash for the subject, follow that convention and reuse the icon for a
+   matching topic or pick one for the new topic.
+3. For unresolved icons, pick a group icon per [§ Groups](#groups) and a kind icon per
+   [§ Default kinds](#default-kinds). If no group is specified or inferred, use the repository name
+   and 🟦 when that square is free.
 
-- **Its groups and kinds**: wherever `AGENTS.md`, or a doc it links, lists chat-title groups (group,
-  icon) and kinds (kind of work, icon). They replace the defaults below.
-- **Its chat profiles**, if it keeps any: saved chat setups that record a chat's title, such as a
-  `chat` field.
-- **Without a table**: the only group is the repository's name with 🟦, and the kinds are
-  [§ Default kinds](#default-kinds).
+For example, if `🔍 [Runbook Review] - 🗄️ Storage recovery` and other titles establish a review
+group with topic icons, `[Runbook Review] - Access rotation` becomes
+`🔍 [Runbook Review] - 🔑 Access rotation`. For a formatted title, check both icon slots before
+renaming the chat or printing the title.
 
 ## Format
 
-`<group icon> [<Group>] - <kind icon> <Topic>`, e.g. `🟦 [agent-kit] - 🐛 Hook exit codes`.
+`<group icon> [<Group>] - <chat icon> <Topic>`, e.g. `🟦 [agent-kit] - 🐛 Hook exit codes`.
 
-- **Group icon**: the first character, the group's icon.
-- **Group**: the team, product, or repository the chat serves.
-- **Child chat**: a chat started from another one (a subtask, a fork, or a chat the agent starts)
-  keeps the parent's group icon and group when the parent's title has them; only its kind icon and
-  topic are its own. A parent without a group prefix leaves the child to pick one as usual.
-- **Kind icon**: the icon for the kind of work.
-- **Topic**: 2-5 words naming the subject, not the request: `Q4 access review`, not
-  `Help with review`.
+- **Group icon**: the first glyph, shared by titles in the group.
+- **Group**: the team, product, repository, or set of related chats.
+- **Child chat**: inherit the parent's group prefix if it has one, unless the user supplies a
+  different group. Choose the child's own chat icon and topic.
+- **Chat icon**: the kind of work by default, or the subject when the group uses topic icons.
+- **Topic**: when generating one, use 2–5 words naming the subject, such as `Q4 access review`.
 
 ## Groups
 
@@ -51,9 +56,8 @@ Read these from the repository before naming:
   repository's own setup, 🎬 for a video product, or 📱 for a mobile app.
 - **Colour squares** mark groups only. A group whose topic has no fitting glyph takes a free one:
   `🟥 🟧 🟨 🟩 🟦 🟪 🟫 ⬛ ⬜`.
-- **A new group** in the repository's table picks its icon per
-  [§ Picking a new icon](#picking-a-new-icon). When no distinct icon is left, ask the user which
-  groups to merge.
+- **A new group** picks its icon per [§ Picking a new icon](#picking-a-new-icon). When no distinct
+  icon is left, ask the user which groups to merge.
 
 ## Default kinds
 
@@ -73,11 +77,10 @@ Read these from the repository before naming:
 
 ## Picking a new icon
 
-- **Meaning first**: the icon says the group's topic or the kind of work at a glance.
-  [references/icons.md](references/icons.md) lists checked icons by meaning; any other glyph must
-  pass the checks below.
-- **One role**: in one repository an icon marks one group or one kind, never both. A kind icon is
-  never a colour square.
+- **Meaning first**: pick an icon that fits its slot. [references/icons.md](references/icons.md)
+  lists checked icons by meaning. Apply the checks below to a new glyph.
+- **One role**: reserve existing group icons for their groups, and colour squares for the first
+  slot.
 - **Distinct shape**: an icon differs in shape from every other icon in its role, so near-alike
   pairs such as 📊 and 📈 never both serve. Compare candidates at 13 px on dark and light
   backgrounds before adding one.
@@ -103,7 +106,8 @@ Read these from the repository before naming:
   The search reads chat content, so it can miss a chat: name what it could not reach for the user.
 - **Chat profiles**: a profile's recorded title follows the same tables; change it with the chat, in
   a bulk rename too.
-- **Cursor, Codex, Claude Code CLI**: the agent cannot rename the chat. When the user asks, print
-  the title on one line to paste, with the parent's group prefix when the user or the hand-off names
-  the parent chat. For a bulk rename, ask for the chats' current titles, then print each with its
-  new title, one per line.
+- **Codex**: use the chat-title tool when exposed (for example, `set_thread_title`). If the user
+  gives no target, rename the current chat. Confirm the final title after the tool succeeds.
+- **Without a rename tool** (for example, Cursor or Claude Code CLI): print the finished title on
+  one line to paste. For a bulk request, use the available titles or ask for the missing ones and
+  print each finished title on its own line.
